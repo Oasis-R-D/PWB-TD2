@@ -1,0 +1,6 @@
+name = [PWB] Half-Life: 2 weapons
+author = PackMan09
+description = [noupload]Collection of firearms from Half-Life: 2, to be used as a weapon base.
+tags = Tool
+version = 2
+preview_image = preview.png

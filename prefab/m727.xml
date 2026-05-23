@@ -1,0 +1,22 @@
+<group name="instance=MOD/prefab/m727.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
+	<group name="eye_space">
+		<location name="fp_action" tags="name=fp_action" pos="0.2 -0.2 -0.9" rot="3.0 4.5 0.0"/>
+		<location name="fp_run" tags="name=fp_run" pos="0.1 -0.3 -0.9" rot="20.0 40.0 0.0"/>
+		<location name="tp_action" tags="name=tp_action" pos="0.2 -0.2 -0.3"/>
+		<location name="tp_run" tags="name=tp_run" pos="0.2 -0.2 -0.45" rot="20.4 44.1 -22.5"/>
+		<location name="tp_crouch" tags="name=tp_crouch" pos="0.2 -0.2 -0.45" rot="20.4 64.1 -22.5"/>
+	</group>
+	<group name="tool_space">
+		<body dynamic="false">
+			<vox texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/m727.vox" scale="0.4"/>
+		</body>
+		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" pos="0.0 -0.15 0.2" rot="0.0 90.0 0.0"/>
+		<location name="tp_run_rh" tags="name=tp_run_rh ik_hand" pos="0.0 -0.15 0.2" rot="0.0 90.0 0.0"/>
+		<location name="tp_crouch_rh" tags="name=tp_crouch_rh ik_hand" pos="0.0 -0.15 0.2" rot="0.0 90.0 0.0"/>
+		<location name="tp_action_lh" tags="name=tp_action_lh ik_hand" pos="0.075 -0.2 -0.3" rot="-90.0 0.0 0.0"/>
+		<location name="tp_run_lh" tags="name=tp_run_lh ik_hand" pos="0.075 -0.2 -0.3" rot="-90.0 15.9 0.0"/>
+		<location name="tp_crouch_lh" tags="name=tp_crouch_lh ik_hand" pos="0.075 -0.2 -0.3" rot="-90.0 15.9 0.0"/>
+		<location name="muzzle" tags="name=muzzle" pos="0.02 -0.02 -0.6" rot="0 0 0"/>
+	</group>
+</group>
+

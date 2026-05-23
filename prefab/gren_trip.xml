@@ -1,0 +1,14 @@
+<group name="instance=MOD/prefab/gren_trip.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
+	<script file="MOD/script/items/genericgrenade.lua">
+		<body tags="hlgrenade" dynamic="true">
+			<vox tags="invisible nomerge" pos="0.0 0.0 0.0" file="MOD/vox/TRIPHITBOX.vox" scale="1.0">
+				<vox tags="nomerge" pos="0.0 0.0 -0.14" rot="0.0 0.0 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/trip.vox" scale="0.4"/>
+			</vox>
+			<joint pos="0.16 0.24 -0.1" size="0.2"/>
+			<joint pos="-0.36 0.24 -0.1" size="0.2"/>
+			<joint pos="-0.36 -0.04 -0.1" size="0.2"/>
+			<joint pos="0.16 -0.04 -0.1" size="0.2"/>
+		</body>
+	</script>
+</group>
+

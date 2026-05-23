@@ -1,0 +1,8 @@
+<group name="instance=MOD/prefab/gren_m203.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
+	<script file="MOD/script/items/displacerball.lua">
+		<body tags="opfordisplaceball" dynamic="true">
+			<vox tags="invisible unbreakable nomerge" file="MOD/vox/HITBOX.vox" scale="1.0"/>
+		</body>
+	</script>
+</group>
+
