@@ -10,13 +10,13 @@
 	</group>
 	<group name="tool_space">
 		<body dynamic="false">
-			<vox file="MOD/vox/python.vox" object="gun" scale="0.4">
+			<vox texture="12 0.5" blendtexture="3 0.05" file="MOD/vox/python.vox" object="gun" scale="0.4">
 				<vox pos="0.018 0.28 -0.218" file="MOD/vox/python.vox" object="frontsight" scale="0.04"/>
 				<vox pos="0.02 0.28 0.056" file="MOD/vox/python.vox" object="backsight2" scale="0.04"/>
 			</vox>
-			<vox pos="-0.02 0.04 0.08" file="MOD/vox/python.vox" object="left" scale="0.4"/>
-			<vox pos="0.02 0.04 0.08" file="MOD/vox/python.vox" object="right" scale="0.4"/>
-			<vox pos="0.005 0.215 -0.12" file="MOD/vox/python.vox" object="barrelatt" scale="0.3"/>
+			<vox texture="12 0.5" blendtexture="3 0.05" pos="-0.02 0.04 0.08" file="MOD/vox/python.vox" object="left" scale="0.4"/>
+			<vox texture="12 0.5" blendtexture="3 0.05" pos="0.02 0.04 0.08" file="MOD/vox/python.vox" object="right" scale="0.4"/>
+			<vox texture="12 0.5" blendtexture="3 0.05" pos="0.005 0.215 -0.12" file="MOD/vox/python.vox" object="barrelatt" scale="0.3"/>
 		</body>
 		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" pos="0.0 0.15 0.1" rot="0.0 90.0 0.0"/>
 		<location name="tp_secaction_rh" tags="name=tp_secaction_rh ik_hand" pos="0.0 0.15 0.1" rot="0.0 90.0 0.0"/>

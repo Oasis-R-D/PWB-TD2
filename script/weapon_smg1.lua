@@ -21,7 +21,7 @@ local DAMAGE = 0.4
 local PLAYERDAMAGE = 0.05
 local MAX_RANGE = 100.0
 local WPNID = "hl2smg1"
-local WPNNAME = "9mmAR"
+local WPNNAME = "SMG1"
 local CASING_ORG = Vec(0.02, 0.25, -0.25)	-- casing origin
 
 -- Per weapon data storer

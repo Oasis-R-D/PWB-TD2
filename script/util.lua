@@ -132,6 +132,17 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 	end
 end
 
+function RemapValClamped(val, A, B, C, D)
+	if ( A == B ) then
+		if val >= B then return D else return C end
+	end
+
+	local cVal = (val - A) / (B - A)
+	cVal = clamp(cVal, 0.0, 1.0)
+
+	return C + (D - C) * cVal
+end
+
 function getAimVector(pos, range, spreadRad, p, spreadRadVert)
 	spreadRadVert = spreadRadVert or spreadRad
 

@@ -21,7 +21,7 @@ local DAMAGE = 0.45
 local PLAYERDAMAGE = 0.11
 local MAX_RANGE = 100.0
 local WPNID = "hl2ar2"
-local WPNNAME = "AR2"
+local WPNNAME = "Pulse Rifle"
 local CASING_ORG = Vec(0.02, 0.0, 0.1)
 
 -- Per weapon data storer
@@ -233,7 +233,7 @@ function client.tickPlayerM727(p, dt)
 					ParticleSticky(0)
 					ParticleEmissive(5, 1)
 					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
+					ParticleColor(0,0.35,1, 1,0,0)
 					SpawnParticle(mt.pos, playervel, 0.125)
 				end
 				

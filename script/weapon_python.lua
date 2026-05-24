@@ -7,7 +7,7 @@
 
 
 -- Per weapon constants
-local RELOAD_TIME = 3.0 -- seconds -- this is bugged in HL1 where it's 2 instead of 3 (3 is the length of anim)
+local RELOAD_TIME = 3.6666 -- seconds
 local RELOAD_SOUND = "MOD/snd/357R.ogg"
 local PRIM_FIRESOUND = "MOD/snd/357FR0.ogg"
 local CLIP_SIZE = 6.0
@@ -77,7 +77,7 @@ function server.primaryFirePYTH(p)
 	local ammo = GetToolAmmo(WPNID, p)
 	local data = PYTHplayers[p]
 
-	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_1DEGREE, p)
+	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
 
 	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1.5)
 
@@ -231,7 +231,7 @@ function client.tickPlayerPYTH(p, dt)
 	-- RECOIL
 	if data.recoil > -0.5 then
 		local recoil = math.max(0, data.recoil)
-		local siderecoil = recoil * 0.25
+		local siderecoil = recoil * 0.125
 		local recoilvert = math.max(0, data.recoil * 1.2)
 		
 		local inversesiderecoil = rnd(0, 1)
@@ -239,7 +239,7 @@ function client.tickPlayerPYTH(p, dt)
 			siderecoil = siderecoil * -1
 		end
 
-		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert))
+		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 100, 0, 0))
 	end 
 	-- END RECOIL
 	

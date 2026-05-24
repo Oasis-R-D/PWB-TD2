@@ -8,13 +8,9 @@
 	</group>
 	<group name="tool_space">
 		<body dynamic="false">
-			<vox pos="-0.04 -0.08 -0.04" file="MOD/vox/glock.vox" object="left" scale="0.4">
-				<vox pos="0.02 0.0 0.0" file="MOD/vox/glock.vox" object="right" scale="0.4"/>
-				<vox name="port" pos="0.0375 0.1975 -0.02" file="MOD/vox/glock.vox" object="port" scale="0.2"/>
-				<vox name="barrel" pos="0.03 0.205 -0.1375" file="MOD/vox/glock.vox" object="port" scale="0.15"/>
-				<vox name="silencer" pos="0.03 0.1925 -0.2875" rot="0 0 45" file="MOD/vox/glock.vox" object="silencer" scale="0.4" tags="invisible"/>
-				<vox pos="0.0 0.2 -0.02" file="MOD/vox/glock.vox" object="portcover" scale="0.2"/>
-				<vox pos="0.02 0.2 -0.08" rot="0.0 -90.0 0.0" file="MOD/vox/glock.vox" object="portcover" scale="0.2"/>
+			<vox pos="-0.012 -0.08 -0.04" texture="11 0.25" blendtexture="7 0.05" file="MOD/vox/glock.vox" object="body" scale="0.2">
+				<vox pos="0.0 0.2 0.0" texture="8 0.25" blendtexture="7 0.2" file="MOD/vox/glock.vox" object="slide" scale="0.05"/>
+				<vox pos="0.0 0.16 -0.2" texture="10 0.05" blendtexture="3 0.05" file="MOD/vox/glock.vox" object="comp" scale="0.05"/>
 			</vox>
 		</body>
 		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" pos="0.0 0.05 0.0" rot="0.0 90.0 0.0"/>
@@ -24,7 +20,6 @@
 		<location name="tp_run_lh" tags="name=tp_run_lh ik_hand" pos="0.0 0.0 0.0" rot="0.0 90.0 0.0"/>
 		<location name="tp_crouch_lh" tags="name=tp_crouch_lh ik_hand" pos="0.0 0.0 0.0" rot="0.0 90.0 0.0"/>
 		<location name="muzzle" tags="name=muzzle" pos="-0.01 0.14 -0.24" rot="0 0 0"/>
-		<location name="supend" tags="name=supend" pos="-0.01 0.14 -0.4775" rot="0 0 0"/>
 	</group>
 </group>
 

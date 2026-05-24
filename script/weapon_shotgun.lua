@@ -6,22 +6,29 @@
 #include "script/util.lua"
 
 -- Per weapon constants
-local RELOAD_TIME = 0.5 -- seconds
+local RELOAD_TIME = 0.4 -- seconds
+local RELOAD_START_TIME = 0.5 -- seconds -- reload start anim is 0.5 secs
+local RELOAD_END_TIME = 0.433 -- seconds -- reload end anim is 0.433 secs
+
+local PUMP_TIME = 0.53 -- seconds -- same timing
+
+-- time for firing to finish
+local FIRE_TIME = 0.333
+local ALTFIRE_TIME = 0.733
+
 local PRIM_FIRESOUND = "MOD/snd/shotgun_fire.ogg"
 local ALT_FIRESOUND = "MOD/snd/shotgun_dbl_fire.ogg"
 local PUMP_SOUND = "MOD/snd/shotgun_cock.ogg"
 local CLIP_SIZE = 6
 local PICKUP_SIZE = 12
 local RECOIL_AMNT = 0.2
-local FIRERATE = 1.35
-local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, FIRERATE is how long until it's over
-local ALTFIRERATE = 1.5
-local CAMALTMOVETIME = (2 * math.pi) * (0.5 / ALTFIRERATE) -- Cam movement sine multiplier, ALTFIRERATE is how long until it's over
+local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRE_TIME) -- Cam movement sine multiplier, FIRERATE is how long until it's over
+local CAMALTMOVETIME = (2 * math.pi) * (0.5 / ALTFIRE_TIME) -- Cam movement sine multiplier, ALTFIRERATE is how long until it's over
 local DAMAGE = 0.35
 local PLAYERDAMAGE = 0.09
 local MAX_RANGE = 60.0
 local WPNID = "hl2shotgun"
-local WPNNAME = "Assault Shotgun"
+local WPNNAME = "Combine Shotgun"
 local CASING_ORG = Vec(0.02, 0.1, 0.075)
 
 -- Per weapon data storer
@@ -164,14 +171,14 @@ function client.tickPlayerSG(p, dt)
 			reloadtime = RELOAD_TIME * shellsneedingloading
 			data.shellstoload = shellsneedingloading
 		else
-			reloadtime = (RELOAD_TIME * shellsneedingloading) + 1
-			data.pumptime = reloadtime - 0.25
+			reloadtime = (RELOAD_TIME * shellsneedingloading) + RELOAD_END_TIME
+			data.pumptime = reloadtime
 			data.shellstoload = shellsneedingloading
 		end
 
 		data.coolDown = reloadtime
 		data.altCoolDown = reloadtime
-		data.shellinserttime = RELOAD_TIME
+		data.shellinserttime = RELOAD_START_TIME
 		data.inreload = true
 	end
 	
@@ -217,9 +224,9 @@ function client.tickPlayerSG(p, dt)
 					
 				data.clipamntSG = data.clipamntSG - 1
 				if data.clipamntSG > 0 then
-					data.altCoolDown = FIRERATE
-					data.coolDown = FIRERATE
-					data.pumptime = FIRERATE - 0.65
+					data.altCoolDown = FIRE_TIME + PUMP_TIME
+					data.coolDown = FIRE_TIME + PUMP_TIME
+					data.pumptime = FIRE_TIME
 				elseif ammo > 1 then
 					local reloadtime = nil
 					local shellsneedingloading = CLIP_SIZE - data.clipamntSG
@@ -228,12 +235,12 @@ function client.tickPlayerSG(p, dt)
 						shellsneedingloading = ammo
 					end
 
-					reloadtime = (shellsneedingloading * RELOAD_TIME) + 1
-					data.pumptime = reloadtime - 0.25
+					reloadtime = (shellsneedingloading * RELOAD_TIME) + RELOAD_END_TIME
+					data.pumptime = reloadtime
 					data.shellstoload = shellsneedingloading
 					data.coolDown = reloadtime
 					data.altCoolDown = reloadtime
-					data.shellinserttime = RELOAD_TIME
+					data.shellinserttime = RELOAD_START_TIME
 					data.inreload = true
 				end
 				
@@ -277,9 +284,9 @@ function client.tickPlayerSG(p, dt)
 				
 				data.clipamntSG = data.clipamntSG - 2
 				if data.clipamntSG > 0 then
-					data.altCoolDown = ALTFIRERATE
-					data.coolDown = ALTFIRERATE
-					data.pumptime = FIRERATE - 0.65
+					data.altCoolDown = ALTFIRE_TIME + PUMP_TIME
+					data.coolDown = ALTFIRE_TIME + PUMP_TIME
+					data.pumptime = ALTFIRE_TIME
 				elseif ammo > 1 then
 					local reloadtime = 0
 					
@@ -288,12 +295,12 @@ function client.tickPlayerSG(p, dt)
 						shellsneedingloading = ammo
 					end
 
-					reloadtime = (shellsneedingloading * RELOAD_TIME) + 1
-					data.pumptime = reloadtime - 0.25
+					reloadtime = (shellsneedingloading * RELOAD_TIME) + RELOAD_END_TIME
+					data.pumptime = reloadtime
 					data.shellstoload = shellsneedingloading
 					data.coolDown = reloadtime
 					data.altCoolDown = reloadtime
-					data.shellinserttime = RELOAD_TIME
+					data.shellinserttime = RELOAD_START_TIME
 					data.inreload = true
 				end
 				
@@ -370,7 +377,7 @@ function client.tickPlayerSG(p, dt)
 			siderecoil = siderecoil * -1
 		end
 
-		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert))
+		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 50, 0, 0))
 	end 
 	-- END RECOIL
 	
@@ -383,7 +390,7 @@ function client.tickPlayerSG(p, dt)
 			local x = camSineTime
 			local e = math.exp(1)
 			local balance = -30 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
-			local amp = 1000-- how intense (y at the peak will not equal this though)
+			local amp = 700-- how intense (y at the peak will not equal this though)
 
 			local equation = nil
 			if data.camAltMove == true then
@@ -395,7 +402,7 @@ function client.tickPlayerSG(p, dt)
 			end
 
 			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -0.75, 0), equation))
+				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -0.5, 0), equation))
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end

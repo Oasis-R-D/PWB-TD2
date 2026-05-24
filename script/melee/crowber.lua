@@ -12,6 +12,8 @@ local DAMAGE = 0.1
 local MAX_RANGE = 2.25
 local WPNID = "hlcrowbar"
 local WPNNAME = "Crowbar"
+local COOLDOWN_MISS = 0.5
+local COOLDOWN_HIT = 0.25
 
 -- Per weapon data storer
 CRBRplayers = {}
@@ -68,7 +70,7 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 	if pHit == false then
 		-- Miss
 		ClientCall(0, "client.swingCRBR", m_pPlayer, dt, fDidHit, SoundPoint, false, false)
-		data.coolDown = 0.5
+		data.coolDown = COOLDOWN_MISS
 	else
 		-- Hit
 		fDidHit = true
@@ -82,9 +84,9 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 			ShootHook(SoundPoint, VecScale(pNorm, -1), "bullet", 0.1, 0.1, MAX_RANGE, m_pPlayer, WPNID, WPNNAME, 5) -- push objects, "dent" metal
 			MakeHole(SoundPoint, 0.75, 0.12, 0) -- stronger than sledge
 		end
-		
 		-- PLAYER DAMAGE END
-		data.coolDown = 0.25
+
+		data.coolDown = COOLDOWN_HIT
 		
 		ClientCall(0, "client.swingCRBR", m_pPlayer, dt, fDidHit, SoundPoint, pHitPlayer, pHitWorld)
 	end
@@ -94,21 +96,20 @@ end
 
 function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
 	local data = CRBRplayers[m_pPlayer]
-	vecSrc = GetPlayerEyeTransform(m_pPlayer)
+	local vecSrc = GetPlayerEyeTransform(m_pPlayer)
 	data.toolAnimator.timeSinceFire = 0.0
+
+	PlaySound(LoadSound("MOD/snd/crowbar_miss.ogg"), vecSrc.pos, 0.5)
 	if hit == false then
 		-- Miss
-		PlaySound(LoadSound("MOD/snd/cbar_miss.ogg"), vecSrc.pos, 0.5)
 		data.toolAnimator.maxActionPoseTime = 0.1 -- stop midswing but further in
-		data.coolDown = 0.5
+		data.coolDown = COOLDOWN_MISS
 	else
 		if pHitPlayer ~= 0 then
 			PlaySound(LoadSound("MOD/snd/crbr_hitplayer0.ogg"), pos, 0.5)
-		elseif pHitWorld ~= 0 then
-			PlaySound(LoadSound("MOD/snd/crbr_hit0.ogg"), pos, 0.25)
 		end
 		data.recoildelay = 0.1 -- more hit feedback and randomness -- TO-DO: delay this
-		data.coolDown = 0.25
+		data.coolDown = COOLDOWN_HIT
 		
 		data.toolAnimator.maxActionPoseTime = 0.05 -- stop midswing
 	end
