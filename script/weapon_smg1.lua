@@ -7,7 +7,7 @@
 
 -- Per weapon constants
 local RELOAD_TIME = 1.5 -- seconds
-local RELOAD_SOUND = "MOD/snd/hkr.ogg"
+local RELOAD_SOUND = "MOD/snd/smg1_reload.ogg"
 local ALT_FIRESOUND = "MOD/snd/smg1_altfire.ogg"
 local PRIM_FIRESOUND = "MOD/snd/smg1_fire.ogg"
 local CLIP_SIZE = 45
@@ -298,7 +298,7 @@ function client.tickPlayerMp5(p, dt)
 			siderecoil = siderecoil * -1
 		end
 
-		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert))
+		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 50, 0, recoil * -15))
 	end 
 	-- END RECOIL
 	
