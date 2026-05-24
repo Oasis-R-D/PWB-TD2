@@ -1,9 +1,15 @@
 -- copy this for a basic pistol with separate sounds when not fired by the client
+-- also includes separated
 #version 2
 
 #include "script/include/player.lua"
 #include "script/pwbtoolanimation.lua"
 #include "script/util.lua"
+
+-- HALF-LIFE: 2 CONSTANTS
+local PISTOL_FASTEST_REFIRE_TIME			= 0.1 -- spam clicking firerate
+local PISTOL_ACCURACY_SHOT_PENALTY_TIME		= 0.2	-- Applied amount of time each shot adds to the time we must recover from
+local PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME	= 1.5	-- Maximum penalty to deal out
 
 -- Per weapon constants
 local RELOAD_TIME = 1.433 -- seconds
@@ -13,8 +19,8 @@ local NONCLIENTPRIM_FIRESOUND = "MOD/snd/pistol_fireNC.ogg" -- glock has diff so
 local CLIP_SIZE = 17.0
 local PICKUP_SIZE = 17.0
 local RECOIL_AMNT = 0.17
-local FIRERATE = 0.5
-local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, FIRERATE is how long until it's over
+local FIRERATE = 0.5 -- held down fire rate
+local CAMMOVETIME = (2 * math.pi) * (0.5 / PISTOL_ACCURACY_SHOT_PENALTY_TIME) -- Cam movement sine multiplier, PISTOL_ACCURACY_SHOT_PENALTY_TIME is how long until it's over
 local ALTFIRERATE = 0.2
 local DAMAGE = 0.4
 local PLAYERDAMAGE = 0.08
@@ -22,11 +28,6 @@ local MAX_RANGE = 125.0
 local WPNID = "hl2pistol"
 local WPNNAME = "9mm Pistol"
 local CASING_ORG = Vec(0.02, 0.25, 0.0)
-
--- HALF-LIFE: 2 CONSTANTS
-local PISTOL_FASTEST_REFIRE_TIME			= 0.1
-local PISTOL_ACCURACY_SHOT_PENALTY_TIME		= 0.2	-- Applied amount of time each shot adds to the time we must recover from
-local PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME	= 1.5	-- Maximum penalty to deal out
 
 -- Per weapon data storer
 PIST9MMplayers = {}
@@ -291,7 +292,7 @@ function client.tickPlayerPIST9MM(p, dt)
 			siderecoil = siderecoil * -1
 		end
 
-		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 66, recoil * -7, recoil * -15))
+		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 66, recoil * -5, recoil * -5))
 	end
 	-- END RECOIL
 	
@@ -302,8 +303,8 @@ function client.tickPlayerPIST9MM(p, dt)
 		if camSineTime ~= nil then
 			local x = camSineTime
 			local e = math.exp(1)
-			local balance = -15 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
-			local amp = 15 -- how intense (y at the peak will not equal this though)
+			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
+			local amp = 20 -- how intense (y at the peak will not equal this though)
 
 			local equation = amp * ((math.sin(CAMMOVETIME * x) * e^(balance * x)) * x)
 
