@@ -23,7 +23,7 @@ local SCOPEFIREDELAY = 0.1
 local DAMAGE = 0.6 -- x5
 local PLAYERDAMAGE = 0.75 -- instakills in opfor
 local MAX_RANGE = 500.0
-local WPNID = "opform40a1"
+local WPNID = "hl2m40a1"
 local WPNNAME = "M40A1"
 local CASING_ORG = Vec(0.02, 0.25, -0.2) -- casing origin
 

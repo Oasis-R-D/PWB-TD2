@@ -10,8 +10,8 @@ local RELOAD_TIME = 1.5 -- seconds
 local RELOAD_SOUND = "MOD/snd/hkr.ogg"
 local ALT_FIRESOUND = "MOD/snd/ar2_altfire.ogg"
 local PRIM_FIRESOUND = "MOD/snd/ar2_fire.ogg"
-local CLIP_SIZE = 50
-local PICKUP_SIZE = 50
+local CLIP_SIZE = 30
+local PICKUP_SIZE = 30
 local RECOIL_AMNT = 0.185
 local FIRERATE = 0.1
 local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, FIRERATE is how long until it's over
@@ -33,7 +33,6 @@ function createPlayerCLIENTdataM727()
 		m203amnt727 = 1,
 		inreload = false,
 		coolDown = 0.0,
-		altCoolDown = 0.0,
 		recoil = 0.0,
 		toolAnimator = ToolAnimator(),
 		camAltMove = false,
@@ -167,7 +166,6 @@ function client.tickPlayerM727(p, dt)
 	if InputPressed("r", p) and data.inreload == false and data.clipamntM727 < CLIP_SIZE and ammo > 0.5 and data.clipamntM727 ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
-		data.altCoolDown = RELOAD_TIME
 		data.inreload = true
 	end
 	
@@ -240,11 +238,9 @@ function client.tickPlayerM727(p, dt)
 				data.clipamntM727 = data.clipamntM727 - 1
 				if data.clipamntM727 > 0 then
 					data.coolDown = FIRERATE
-					data.altCoolDown = FIRERATE
 				elseif ammo > 1 then
 					PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 					data.coolDown = RELOAD_TIME
-					data.altCoolDown = RELOAD_TIME
 					data.inreload = true
 				end
 				
@@ -253,7 +249,7 @@ function client.tickPlayerM727(p, dt)
 	end
 
 	if InputPressed("grab", p) and data.m203amnt727 > 0.5 and GetPlayerCanUseTool(p) == true  then
-			if data.altCoolDown < 0 then
+			if data.coolDown < 0 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 				if IsPlayerLocal(p) then
 					ServerCall("server.secondaryFireM727", p)
@@ -286,7 +282,6 @@ function client.tickPlayerM727(p, dt)
 				
 				data.recoil = 1.5 * RECOIL_AMNT
 				
-				data.altCoolDown = ALTFIRERATE
 				data.coolDown = ALTFIRERATE
 				data.m203amnt727 = data.m203amnt727 - 1
 			end
@@ -294,7 +289,6 @@ function client.tickPlayerM727(p, dt)
 	
 	-- decrease firing cooldown and recoil
 	data.coolDown = data.coolDown - dt
-	data.altCoolDown = data.altCoolDown - dt
 	data.recoil = data.recoil - dt
 	
 	-- RECOIL
@@ -321,7 +315,7 @@ function client.tickPlayerM727(p, dt)
 			local x = camSineTime
 			local e = math.exp(1)
 			local balance = -15 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
-			local amp = 10 -- how intense (y at the peak will not equal this though)
+			local amp = 15 -- how intense (y at the peak will not equal this though)
 			
 			local equation = nil
 			if data.camAltMove == true then
@@ -333,7 +327,12 @@ function client.tickPlayerM727(p, dt)
 			end
 
 			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -1.0, 0), equation))
+				local t = 0
+				if data.camAltMove == true then
+					t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -1.0, 0), equation))
+				else
+					t = Transform(Vec(), QuatAxisAngle(Vec(-1.0, 0.5, 0), equation))
+				end
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end

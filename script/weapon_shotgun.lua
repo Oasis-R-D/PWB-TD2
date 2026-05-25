@@ -39,7 +39,6 @@ function createPlayerCLIENTdataSG()
 		clipamntSG = CLIP_SIZE,
 		inreload = false,
 		coolDown = 0.0,
-		altCoolDown = 0.0,
 		recoil = 0.0,
 		toolAnimator = ToolAnimator(),
 		pumptime = nil, -- time until pump sound is played (and animations if those are ever added)
@@ -177,7 +176,6 @@ function client.tickPlayerSG(p, dt)
 		end
 
 		data.coolDown = reloadtime
-		data.altCoolDown = reloadtime
 		data.shellinserttime = RELOAD_START_TIME
 		data.inreload = true
 	end
@@ -224,7 +222,6 @@ function client.tickPlayerSG(p, dt)
 					
 				data.clipamntSG = data.clipamntSG - 1
 				if data.clipamntSG > 0 then
-					data.altCoolDown = FIRE_TIME + PUMP_TIME
 					data.coolDown = FIRE_TIME + PUMP_TIME
 					data.pumptime = FIRE_TIME
 				elseif ammo > 1 then
@@ -239,7 +236,6 @@ function client.tickPlayerSG(p, dt)
 					data.pumptime = reloadtime
 					data.shellstoload = shellsneedingloading
 					data.coolDown = reloadtime
-					data.altCoolDown = reloadtime
 					data.shellinserttime = RELOAD_START_TIME
 					data.inreload = true
 				end
@@ -249,7 +245,7 @@ function client.tickPlayerSG(p, dt)
 	end
 
 	if InputDown("grab", p) and ammo >= 1 and data.clipamntSG > 1.5 and GetPlayerCanUseTool(p) == true then
-			if data.altCoolDown < 0 then
+			if data.coolDown < 0 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 				if IsPlayerLocal(p) then
 					ServerCall("server.secondaryFireSG", p)
@@ -284,7 +280,6 @@ function client.tickPlayerSG(p, dt)
 				
 				data.clipamntSG = data.clipamntSG - 2
 				if data.clipamntSG > 0 then
-					data.altCoolDown = ALTFIRE_TIME + PUMP_TIME
 					data.coolDown = ALTFIRE_TIME + PUMP_TIME
 					data.pumptime = ALTFIRE_TIME
 				elseif ammo > 1 then
@@ -299,7 +294,6 @@ function client.tickPlayerSG(p, dt)
 					data.pumptime = reloadtime
 					data.shellstoload = shellsneedingloading
 					data.coolDown = reloadtime
-					data.altCoolDown = reloadtime
 					data.shellinserttime = RELOAD_START_TIME
 					data.inreload = true
 				end
@@ -310,7 +304,6 @@ function client.tickPlayerSG(p, dt)
 	
 	-- decrease firing cooldown and recoil
 	data.coolDown = data.coolDown - dt
-	data.altCoolDown = data.altCoolDown - dt
 	data.recoil = data.recoil - dt
 	
 	-- SHELL LOADING

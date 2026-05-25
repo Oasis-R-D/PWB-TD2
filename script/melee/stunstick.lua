@@ -10,8 +10,8 @@
 local RECOIL_AMNT = 0.3
 local DAMAGE = 0.1
 local MAX_RANGE = 2.25
-local WPNID = "hl2crowbar"
-local WPNNAME = "Crowbar"
+local WPNID = "hl2stunstick"
+local WPNNAME = "Stunstick"
 local COOLDOWN_MISS = 0.5
 local COOLDOWN_HIT = 0.25
 

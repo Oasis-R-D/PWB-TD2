@@ -169,7 +169,6 @@ function client.tickPlayerMp5(p, dt)
 	if InputPressed("r", p) and data.inreload == false and data.clipamntMP5 < CLIP_SIZE and ammo > 0.5 and data.clipamntMP5 ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
-		data.altCoolDown = RELOAD_TIME
 		data.inreload = true
 	end
 	
@@ -276,8 +275,8 @@ function client.tickPlayerMp5(p, dt)
 				
 				data.recoil = 1.5 * RECOIL_AMNT
 				
+				data.coolDown = 0.5
 				data.altCoolDown = ALTFIRERATE
-				data.coolDown = ALTFIRERATE
 				data.m203amntMP5 = data.m203amntMP5 - 1
 			end
 	end
