@@ -116,6 +116,73 @@ function client.tickSG(dt)
 	end
 end
 
+-- in HL2, using the secondary fire with only enough ammo for the primary will fire primary instead.
+-- separated it to it's own function to allow that
+function client.primaryFireSG(p)
+	local pt = GetPlayerTransform(p)
+	local mt = GetToolLocationWorldTransform("muzzle", p)
+
+	local ammo = GetToolAmmo(WPNID, p)
+
+	if mt == nil then
+		return
+	end
+	
+	local data = SGplayers[p]
+
+	PointLight(mt.pos, 1, 0.7, 0.5, 3)
+	if IsPlayerLocal(p) then
+		ServerCall("server.primaryFireSG", p)
+		camSineTime = 0
+		data.camAltMove = false
+		PlayHaptic(shootHaptic, 1)
+
+		-- shell ejection
+		data.shellstopump = 1.0
+	end
+
+	local toolBody = GetToolBody(p)
+	local playervel = GetPlayerVelocity(p)
+	
+	-- muzzleflash
+	for i=0, 3 do
+		ParticleReset()
+		ParticleGravity(0)
+		ParticleRadius(rnd(0.1, 0.15), 0.33)
+		ParticleAlpha(1, 0)
+		ParticleTile(5)
+		ParticleDrag(0)
+		ParticleRotation(rnd(10, -10), 0)
+		ParticleSticky(0)
+		ParticleEmissive(5, 1)
+		ParticleCollide(0)
+		ParticleColor(1,0.35,0, 1,0,0)
+		SpawnParticle(mt.pos, playervel, 0.125)
+	end
+		
+	data.clipamntSG = data.clipamntSG - 1
+	if data.clipamntSG > 0 then
+		data.coolDown = FIRE_TIME + PUMP_TIME
+		data.pumptime = FIRE_TIME
+	elseif ammo > 1 then
+		local reloadtime = nil
+		local shellsneedingloading = CLIP_SIZE - data.clipamntSG
+
+		if shellsneedingloading > ammo then
+			shellsneedingloading = ammo
+		end
+
+		reloadtime = (shellsneedingloading * RELOAD_TIME) + RELOAD_END_TIME
+		data.pumptime = reloadtime
+		data.shellstoload = shellsneedingloading
+		data.coolDown = reloadtime
+		data.shellinserttime = RELOAD_START_TIME
+		data.inreload = true
+	end
+	
+	data.recoil = RECOIL_AMNT
+end
+
 clipamnt = 0
 local camSineTime = nil
 
@@ -181,63 +248,14 @@ function client.tickPlayerSG(p, dt)
 	end
 				
 	if InputDown("usetool", p) and ammo > 0.5 and data.clipamntSG > 0.5 and GetPlayerCanUseTool(p) == true then
-			if data.coolDown < 0 then				
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
-				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFireSG", p)
-					camSineTime = 0
-					data.camAltMove = false
-					PlayHaptic(shootHaptic, 1)
-
-					-- shell ejection
-					data.shellstopump = 1.0
-				end
-
-				local toolBody = GetToolBody(p)
-				local playervel = GetPlayerVelocity(p)
-				
-				-- muzzleflash
-				for i=0, 3 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.1, 0.15), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(mt.pos, playervel, 0.125)
-				end
-					
-				data.clipamntSG = data.clipamntSG - 1
-				if data.clipamntSG > 0 then
-					data.coolDown = FIRE_TIME + PUMP_TIME
-					data.pumptime = FIRE_TIME
-				elseif ammo > 1 then
-					local reloadtime = nil
-					local shellsneedingloading = CLIP_SIZE - data.clipamntSG
-
-					if shellsneedingloading > ammo then
-						shellsneedingloading = ammo
-					end
-
-					reloadtime = (shellsneedingloading * RELOAD_TIME) + RELOAD_END_TIME
-					data.pumptime = reloadtime
-					data.shellstoload = shellsneedingloading
-					data.coolDown = reloadtime
-					data.shellinserttime = RELOAD_START_TIME
-					data.inreload = true
-				end
-				
-				data.recoil = RECOIL_AMNT
-			end
+		if data.coolDown < 0 then				
+			client.primaryFireSG(p)
+		end
 	end
 
-	if InputDown("grab", p) and ammo >= 1 and data.clipamntSG > 1.5 and GetPlayerCanUseTool(p) == true then
-			if data.coolDown < 0 then
+	if InputDown("grab", p) and GetPlayerCanUseTool(p) == true and ammo >= 1 then 
+		if data.coolDown < 0 then
+			if data.clipamntSG > 1.5 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 				if IsPlayerLocal(p) then
 					ServerCall("server.secondaryFireSG", p)
@@ -291,7 +309,10 @@ function client.tickPlayerSG(p, dt)
 				end
 				
 				data.recoil = 1.5 * RECOIL_AMNT
+			else -- has enough ammo to primary but not secondary, so fire primary
+				client.primaryFireSG(p)
 			end
+		end
 	end
 	
 	-- decrease firing cooldown and recoil
@@ -362,6 +383,7 @@ function client.tickPlayerSG(p, dt)
 			siderecoil = siderecoil * -1
 		end
 
+		-- QUATEULER: (x, y, z) X is tilting barrel upwards, Y tilts it left/right, Z rotates it
 		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 50, 0, 0))
 	end 
 	-- END RECOIL

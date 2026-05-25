@@ -82,7 +82,7 @@ function server.primaryFireM727(p)
 
 	-- start fires sometimes (for the funny)
 	if hit == true then
-		SpawnFireHook(VecAdd(pos, VecScale(dir, dist)), 10)
+		server.SpawnFireHook(VecAdd(pos, VecScale(dir, dist)), 10)
 	end
 
 	StopSound(data.firesound)
