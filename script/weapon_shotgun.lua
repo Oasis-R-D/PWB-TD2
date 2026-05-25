@@ -93,10 +93,7 @@ function server.secondaryFireSG(p)
 	
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
 
-	local ammo = GetToolAmmo(WPNID, p)
-	if ammo < 9999 then
-		SetToolAmmo(WPNID, ammo-2, p)
-	end
+	server.depleteAmmo(p, WPNID, 2)
 end
 
 function client.initSG()

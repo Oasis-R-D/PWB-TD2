@@ -222,9 +222,10 @@ function server.SpawnFireHook(pos, chance)
 	end
 end
 
-function server.depleteAmmo(p, id)
+function server.depleteAmmo(p, id, amount)
+	amount = amount or 1
 	local ammo = GetToolAmmo(id, p)
 	if ammo < 9999 then
-		SetToolAmmo(id, ammo-1, p)
+		SetToolAmmo(id, ammo-amount, p)
 	end
 end
