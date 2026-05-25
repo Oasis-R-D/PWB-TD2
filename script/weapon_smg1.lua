@@ -21,7 +21,7 @@ local DAMAGE = 0.4
 local PLAYERDAMAGE = 0.05
 local MAX_RANGE = 100.0
 local WPNID = "hl2smg1"
-local WPNNAME = "SMG1"
+local WPNNAME = "Combine SMG"
 local CASING_ORG = Vec(0.02, 0.25, -0.25)	-- casing origin
 
 -- Per weapon data storer
@@ -75,7 +75,6 @@ end
 function server.primaryFireMp5(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local ammo = GetToolAmmo(WPNID, p)
 	local data = MP5players[p]
 	
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_5DEGREES, p)
@@ -85,9 +84,7 @@ function server.primaryFireMp5(p)
 	StopSound(data.firesound)
 	data.firesound = PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
 	
-	if ammo < 9999 then
-		SetToolAmmo(WPNID, ammo-1, p)
-	end
+	server.depleteAmmo(p, WPNID)
 end
 
 function server.secondaryFireMp5(p)
@@ -105,8 +102,7 @@ function server.secondaryFireMp5(p)
 	SetTag(grenade_ent[2], "playerThrew", p)
 	SetBodyVelocity(grenade_ent[2], VecScale(dir, 20.32))
 
-	-- HL2 smg fires grenades straight
-	--SetBodyAngularVelocity(grenade_ent[2], TransformToParentVec(GetPlayerEyeTransform(p), Vec(-rnd(2.54, 12.7), 0, 0)))
+	SetBodyAngularVelocity(grenade_ent[2], TransformToParentVec(GetPlayerEyeTransform(p), Vec(rnd(-10.16, 10.16), 0, 0)))
 
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
 end

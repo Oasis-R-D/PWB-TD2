@@ -109,6 +109,17 @@ function AimLerp(src1, src2, t)
 	return src1 + (src2 - src1) * t
 end
 
+function RemapValClamped(val, A, B, C, D)
+	if ( A == B ) then
+		if val >= B then return D else return C end
+	end
+
+	local cVal = (val - A) / (B - A)
+	cVal = clamp(cVal, 0.0, 1.0)
+
+	return C + (D - C) * cVal
+end
+
 function server.getPlayerSpread(data)
 	local ramp = RemapValClamped(	data.AccuracyPenalty, 
 									0.0, 
@@ -125,19 +136,14 @@ function server.primaryFirePIST9MM(p)
 
 	local data = PIST9MMplayers[p]
 
-	local ammo = GetToolAmmo(WPNID, p)
-
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, server.getPlayerSpread(data), p)
-
 	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 2)
 	
 	data.AccuracyPenalty = data.AccuracyPenalty + PISTOL_ACCURACY_SHOT_PENALTY_TIME
 
 	data.coolDown = PISTOL_FASTEST_REFIRE_TIME -- we don't care about reloading here (too lazy to code also)!!!
 
-	if ammo < 9999 then
-		SetToolAmmo(WPNID, ammo-1, p)
-	end
+	server.depleteAmmo(p, WPNID)
 end
 
 function client.initPIST9MM()

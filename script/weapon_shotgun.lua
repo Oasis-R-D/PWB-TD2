@@ -73,8 +73,6 @@ end
 function server.primaryFireSG(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local ammo = GetToolAmmo(WPNID, p)
-
 	for i=0, 6 do -- 7
 		local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_10DEGREES, p)
 		ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
@@ -82,15 +80,11 @@ function server.primaryFireSG(p)
 	
 	PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
 	
-	if ammo < 9999 then
-		SetToolAmmo(WPNID, ammo-1, p)
-	end
+	server.depleteAmmo(p, WPNID)
 end
 
 function server.secondaryFireSG(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-	
-	local ammo = GetToolAmmo(WPNID, p)
 
 	for i=0, 11 do -- 12
 		local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_10DEGREES, p)
@@ -98,7 +92,8 @@ function server.secondaryFireSG(p)
 	end
 	
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
-	
+
+	local ammo = GetToolAmmo(WPNID, p)
 	if ammo < 9999 then
 		SetToolAmmo(WPNID, ammo-2, p)
 	end

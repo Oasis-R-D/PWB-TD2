@@ -132,17 +132,6 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 	end
 end
 
-function RemapValClamped(val, A, B, C, D)
-	if ( A == B ) then
-		if val >= B then return D else return C end
-	end
-
-	local cVal = (val - A) / (B - A)
-	cVal = clamp(cVal, 0.0, 1.0)
-
-	return C + (D - C) * cVal
-end
-
 function getAimVector(pos, range, spreadRad, p, spreadRadVert)
 	spreadRadVert = spreadRadVert or spreadRad
 
@@ -160,6 +149,7 @@ function getAimVector(pos, range, spreadRad, p, spreadRadVert)
 	local x = r * math.cos(phi)
 	local y = r * math.sin(phi)
 	local vec = Vec(x, y, z)
+
 	if dir[3] > 0.9999 then
 		return newPos, vec
 	elseif dir[3] < -0.9999 then
@@ -174,49 +164,56 @@ function getAimVector(pos, range, spreadRad, p, spreadRadVert)
 end
 
 -- hook the Shoot func to add new stuff
-function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, times)
-	times = times or 1
-	newrange = range or 100 -- or is only here just because, not needed.
+function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, impulseMult)
+	impulseMult = impulseMult or 1
 	playerdamage = playerdamage or 0
 
-	local ropeHit, ropeDist, ropeJoint = QueryRaycastRope(pos, dir, range) -- Break Ropes
+	-- destroy ropes (only runs once!!)
+	local ropeHit, ropeDist, ropeJoint = QueryRaycastRope(pos, dir, range)
 	if ropeHit then
 		local breakPoint = VecAdd(pos, VecScale(dir, ropeDist))
 		BreakRope(ropeJoint, breakPoint)
 	end
 	
-	local bHit, pdist, pShape, playerhit = QueryShot(pos, dir, range, 0, player) -- Play player hit sound and create blud
+	-- figure out whether we need to run player or world hit code
+	local bHit, pdist, pShape, playerhit = QueryShot(pos, dir, range, 0, player)
 
+	-- knock back objects some more
 	if bHit then
-		ApplyBodyImpulse(GetShapeBody(pShape), VecAdd(pos, VecScale(dir, pdist)), VecScale(dir, 800 * times))
+		ApplyBodyImpulse(GetShapeBody(pShape), VecAdd(pos, VecScale(dir, pdist)), VecScale(dir, 800 * impulseMult))
 	end
 
 	if playerhit == 0 then
+		-- use normal shooting for world
 		Shoot(pos, dir, shoottype, damage, range, player, weaponid)
-		return
+	else
+		-- play player impact SFX
+		local SoundPoint = VecAdd(pos, VecScale(dir, pdist))
+		PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), SoundPoint, 2)
+
+		-- don't actually hit the player so we can do our own damage and vfx
+		local newrange = pdist - 0.125
+		if newrange > 0 then Shoot(pos, dir, shoottype, damage, newrange, player, weaponid) end
+
+		-- check what bodypart was hit
+		QueryRequire("player")
+		QueryInclude("player")
+		local _, _, _, bodyPart = QueryRaycast(pos, dir, range + 0.125, 0.1)
+
+		-- per bodypart damage
+		local hitPart = GetTagValue(GetShapeBody(bodyPart), "bone")
+		if hitPart == "head" then
+			playerdamage = playerdamage * GLOBAL_HEADSHOTMULT
+		elseif hitPart == "neck" then
+			playerdamage = playerdamage * (GLOBAL_HEADSHOTMULT/2)
+		end
+
+		-- deal damage, do blood VFX
+		ApplyPlayerDamage(playerhit, playerdamage, weaponname, player)
+		BloodVFX(SoundPoint, dir, playerdamage, playerhit)
 	end
 
-	local SoundPoint = VecAdd(pos, VecScale(dir, pdist))
-	PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), SoundPoint, 2)
-
-	newrange = pdist - 0.125 -- don't actually hit the player so we can do our own damage and vfx
-	if newrange < 0 then newrange = 0 end
-	Shoot(pos, dir, shoottype, damage, newrange, player, weaponid)
-
-	-- check what bodypart was hit
-	QueryRequire("player")
-	QueryInclude("player")
-	local _, _, _, bodyPart = QueryRaycast(pos, dir, range + 0.125, 0.1) -- Play player hit sound and create blud
-
-	local hitPart = GetTagValue(GetShapeBody(bodyPart), "bone")
-	if hitPart == "head" then
-		playerdamage = playerdamage * GLOBAL_HEADSHOTMULT
-	elseif hitPart == "neck" then
-		playerdamage = playerdamage * (GLOBAL_HEADSHOTMULT/2)
-	end
-
-	ApplyPlayerDamage(playerhit, playerdamage, weaponname, player)
-	BloodVFX(SoundPoint, dir, playerdamage, playerhit)
+	return bHit, pdist
 end
 
 function server.SpawnFireHook(pos, chance)
@@ -225,7 +222,7 @@ function server.SpawnFireHook(pos, chance)
 	end
 end
 
-function server.depleteAmmo(p, id) -- used in server calls (mainly in special weapons)
+function server.depleteAmmo(p, id)
 	local ammo = GetToolAmmo(id, p)
 	if ammo < 9999 then
 		SetToolAmmo(id, ammo-1, p)

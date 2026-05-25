@@ -73,8 +73,6 @@ end
 
 function server.primaryFirePYTH(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-
-	local ammo = GetToolAmmo(WPNID, p)
 	local data = PYTHplayers[p]
 
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
@@ -84,9 +82,7 @@ function server.primaryFirePYTH(p)
 	StopSound(data.firesound)
 	data.firesound = PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
 
-	if ammo < 9999 then
-		SetToolAmmo(WPNID, ammo-1, p)
-	end
+	server.depleteAmmo(p, WPNID)
 end
 
 function client.initPYTH()

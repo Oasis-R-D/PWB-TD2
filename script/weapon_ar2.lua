@@ -74,19 +74,21 @@ end
 function server.primaryFireM727(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local ammo = GetToolAmmo(WPNID, p)
 	local data = M727players[p]
 
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_3DEGREES, p)
 	
-	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
-	
+	local hit, dist = ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
+
+	-- start fires sometimes (for the funny)
+	if hit == true then
+		SpawnFireHook(VecAdd(pos, VecScale(dir, dist)), 10)
+	end
+
 	StopSound(data.firesound)
 	data.firesound = PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
 	
-	if ammo < 9999 then
-		SetToolAmmo(WPNID, ammo-1, p)
-	end
+	server.depleteAmmo(p, WPNID)
 end
 
 function server.secondaryFireM727(p)
@@ -231,7 +233,7 @@ function client.tickPlayerM727(p, dt)
 					ParticleSticky(0)
 					ParticleEmissive(5, 1)
 					ParticleCollide(0)
-					ParticleColor(0,0.35,1, 1,0,0)
+					ParticleColor(0,0.35,1, 1,0.35,0)
 					SpawnParticle(mt.pos, playervel, 0.125)
 				end
 				
