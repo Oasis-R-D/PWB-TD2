@@ -6,34 +6,33 @@
 #include "script/util.lua"
 
 -- Per weapon constants
-local RELOAD_TIME = 2.32 -- seconds
-local EMPTYRELOAD_TIME = 4.1 -- seconds
-local TACRELOAD_SOUND = "MOD/snd/m40r.ogg"
-local EMPTRELOAD_SOUND = "MOD/snd/m40rfll.ogg"
-local PRIM_FIRESOUND = "MOD/snd/m40FR.ogg"
-local ALT_FIRESOUND = "MOD/snd/m40scp.ogg"
-local BOLT_CYCLE = "MOD/snd/m40bolt.ogg"
-local CLIP_SIZE = 5.0
-local PICKUP_SIZE = 15.0
+local PRIM_FIRESOUND = "MOD/snd/crossbow_fire.ogg"
+local PRIM_FIRESOUND2 = "MOD/snd/crossbow_fire2.ogg"
+local BOLT_CYCLE = "MOD/snd/crossbow_load0.ogg"
+local PICKUP_SIZE = 3.0
 local RECOIL_AMNT = 0.25
 local FIRERATE = 2.0
 local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, FIRERATE is how long until it's over
 local ALTFIRERATE = 0.5
 local SCOPEFIREDELAY = 0.1
-local DAMAGE = 0.6 -- x5
-local PLAYERDAMAGE = 0.75 -- instakills in opfor
-local MAX_RANGE = 500.0
-local WPNID = "hl2m40a1"
-local WPNNAME = "M40A1"
-local CASING_ORG = Vec(0.02, 0.25, -0.2) -- casing origin
+local DAMAGE = 0.5
+local PLAYERDAMAGE = 1.0
+local WPNID = "hl2crossbow"
+local WPNNAME = "Rebar Crossbow"
+
+local BOLT_IMPACT = "MOD/snd/crossbow_bt_hit.ogg"
+local BOLT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
+
+local BALL_VELOCITY = 63.5 -- game accurate
 
 -- Per weapon data storer
 M40players = {}
 
+-- Stores data for all the BOLTS
+CrossbowBolts = {}
+
 function createPlayerCLIENTdataM40()
     return {
-		clipamntM40 = CLIP_SIZE,
-		inreload = false,
 		coolDown = 0.0,
 		altCoolDown = 0.0,
 		recoil = 0.0,
@@ -42,6 +41,24 @@ function createPlayerCLIENTdataM40()
 		timetobolt = nil,
 		playbolt = true,
 		dataReset = true,
+	}
+end
+
+function FindBoltSERVERdataOpening()
+    local i = 1
+    while CrossbowBolts[i] ~= nil do
+        i = i + 1
+    end
+    return i
+end
+
+function createBallSERVERdataCB(p, pos, dir, body)
+    return {
+		curDir = dir,
+		curPos = pos,
+		model = body,
+		owner = p,
+		totalDist = 0.0,
 	}
 end
 
@@ -60,6 +77,85 @@ function server.tickM40(dt)
 	--for p in Players() do
 		--server.tickPlayerM40(p, dt)
 	--end
+
+	if #CrossbowBolts == 0 then return end -- no crossbow bolts
+	
+	for index, data in pairs(CrossbowBolts) do
+		if data.totalDist > 500 then
+			Delete(data.model)
+			CrossbowBolts[index] = nil -- delete the bolt
+		else
+			PointLight(data.curPos, 0.66,0.22,0, 0.2)
+
+			QueryRejectBody(GetToolBody(p))
+			QueryRejectBody(data.model)
+			QueryRejectPlayer(p)
+			QueryInclude("player")
+			local hit, dist, normal, shape = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
+			local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
+			
+			data.totalDist = data.totalDist + dist
+
+			if dist == 0 then
+				data.totalDist = data.totalDist + 10 * dt
+				endPoint = VecAdd(data.curPos, VecScale(data.curDir, 10 * dt))
+			end
+			
+			data.curPos = endPoint
+
+			SetBodyTransform(data.model, Transform(data.curPos, QuatLookAt(Vec(), data.curDir)))
+
+			if hit and dist ~= 0 then
+				
+				-- get mat type BEFORE we break it
+				local matType = GetShapeMaterialAtPosition(shape, endPoint)
+
+				-- do damage
+				local _, _, hitPlayer = ShootHook(data.curPos, data.curDir, "bullet", DAMAGE, PLAYERDAMAGE, 0.25, data.owner, WPNID, WPNNAME)
+				
+				if hitPlayer ~= 0 then
+					PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
+
+					Delete(data.model)
+					CrossbowBolts[index] = nil -- delete the bolt
+				else
+					Paint(data.curPos, 0.33, "explosion", 0.75)
+
+					-- spawn fire sometimes
+					server.SpawnFireHook(data.curPos, 50)
+
+					if matType ~= "glass" then
+						-- play sound and VFX here since it spams sounds and VFX otherwise
+
+						-- sparks
+						for i=1,10 do
+							ParticleReset()
+							ParticleCollide(1)
+							ParticleRadius(0.02, 0)
+							ParticleGravity(-10)
+							ParticleEmissive(5)
+							ParticleStretch(5)
+							ParticleTile(4)
+							ParticleColor(1,0.5,0.5, 1,0.25,0)
+							SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
+						end
+
+						PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
+
+						-- See if we should reflect off this surface
+						local hitDot = VecDot(normal, VecScale(data.curDir, -1))
+						if hitDot < 0.5 then
+							--data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2)) -- TO-DO: only reflect at some angles
+							data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
+						else
+							Delete(data.model)
+							CrossbowBolts[index] = nil -- delete the bolt
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
 function server.tickPlayerM40(p, dt)
@@ -72,10 +168,15 @@ function server.primaryFireM40(p)
 
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
 
-	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 2)
+	local GrenTrans = Transform(pos, QuatLookAt(Vec(), dir))
+	local xml = "MOD/prefab/crossbow_bolt.xml"
+	local boltEnt = Spawn(xml, GrenTrans)
+
+	-- add bolt to sim
+	CrossbowBolts[FindBoltSERVERdataOpening()] = createBallSERVERdataCB(p, mt.pos, dir, boltEnt[1])
 
 	PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
-	
+	PlaySound(LoadSound(PRIM_FIRESOUND2), mt.pos, 10)
 	if ammo < 9999 then
 		SetToolAmmo(WPNID, ammo-1, p)
 	end
@@ -101,7 +202,6 @@ function client.tickM40(dt)
 	end
 end
 
-scopeddraw = false
 clipamnt = 0
 local camSineTime = nil
 
@@ -136,24 +236,6 @@ function client.tickPlayerM40(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
-	if InputPressed("r", p) and data.inreload == false and data.clipamntM40 < CLIP_SIZE and ammo > 0.5 and data.clipamntM40 ~= ammo then
-		if data.clipamntM40 > 0 then
-			data.coolDown = RELOAD_TIME
-			PlaySound(LoadSound(TACRELOAD_SOUND), pt.pos)
-		else
-			data.coolDown = EMPTYRELOAD_TIME
-		end
-		data.inreload = true
-	end
-	
-	if data.coolDown < 0 and data.inreload == true then	
-		data.inreload = false
-		data.clipamntM40 = CLIP_SIZE
-		if data.clipamntM40 > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntM40 = ammo
-		end
-	end
-
 	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
 			if data.coolDown < 0 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
@@ -181,16 +263,10 @@ function client.tickPlayerM40(p, dt)
 					SpawnParticle(mt.pos, playervel, 0.125)
 				end
 				data.timetobolt = 0.842
-				data.clipamntM40 = data.clipamntM40 - 1
-				if data.clipamntM40 > 0 then
+				if ammo-1 > 0 then
+					data.timetobolt = 0.842
 					data.coolDown = FIRERATE
 					data.altCoolDown = SCOPEFIREDELAY
-					
-				elseif ammo > 1 then
-					data.recoil = 0.05
-					PlaySound(LoadSound(EMPTRELOAD_SOUND), pt.pos)
-					data.coolDown = EMPTYRELOAD_TIME
-					data.inreload = true
 				end
 				
 				data.recoil = RECOIL_AMNT
@@ -199,25 +275,17 @@ function client.tickPlayerM40(p, dt)
 
 	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then
 		if data.altCoolDown < 0 then
-			if IsPlayerLocal(p) then
-				PlaySound(LoadSound(ALT_FIRESOUND), pt.pos)
-			end
 			data.altCoolDown = ALTFIRERATE
 			data.scoped = not data.scoped
 		end
 	end
 
-	if data.scoped == false or data.clipamntM40 < 0 or ammo <= 0 then
+	if data.scoped == false or ammo <= 0 then
 		data.toolAnimator.forceSecondaryActionPose = false
-
-		if IsPlayerLocal(p) then
-			scopeddraw = false
-		end
 	elseif data.scoped == true then
 		data.toolAnimator.forceSecondaryActionPose = true
 
 		if IsPlayerLocal(p) then
-			scopeddraw = true
 			SetCameraFov(18)
 		end
 	end
@@ -230,33 +298,14 @@ function client.tickPlayerM40(p, dt)
 	if data.timetobolt ~= nil then
 		data.timetobolt = data.timetobolt - dt
 		if data.timetobolt <= 0 and data.playbolt == true then
-			if data.clipamntM40 > 0 then -- already plays bolt sfx in reload
+			if ammo > 0 then -- already plays bolt sfx in reload
 				PlaySound(LoadSound(BOLT_CYCLE), pt.pos)
+				-- TO-DO: make bolt visible again here
 			end
 			data.playbolt = false
 			data.recoil = 0.05
 		end
 		if data.timetobolt <= -0.1 then
-			if IsPlayerLocal(p) then
-				local toolBody = GetToolBody(p)
-				local transform = GetBodyTransform(toolBody)
-				local eject_origin = TransformToParentPoint(transform, Vec(CASING_ORG[1],CASING_ORG[2],CASING_ORG[3]))
-				local playervel = GetPlayerVelocity(p)
-				
-				-- shell ejection
-				local eject_direction=TransformToParentVec(transform, Vec(1, -0.2, 0))
-				ParticleReset()
-				ParticleGravity(rnd(-2, -8))
-				ParticleRadius(0.02)
-				ParticleAlpha(1)
-				ParticleColor(0.8, 0.6, 0)
-				ParticleTile(6)
-				ParticleDrag(0.125)
-				ParticleSticky(0.5)
-				ParticleCollide(1)
-				SpawnParticle(eject_origin, VecAdd(VecScale(eject_direction,3), playervel), 5) -- player velocity isn't functioning how i'd like but whatever
-			end
-
 			data.timetobolt = nil
 			data.playbolt = true
 			data.recoil = 0.025
@@ -288,39 +337,15 @@ function client.tickPlayerM40(p, dt)
 			local x = camSineTime
 			local e = math.exp(1)
 			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
-			local amp = 800 -- how intense (y at the peak will not equal this though)
+			local amp = 600 -- how intense (y at the peak will not equal this though)
 
 			local equation = amp * ((math.sin(CAMMOVETIME * x) * e^(balance * x)) * x)
 
 			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -0.33, 0), equation))
+				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -0.1, 0), equation))
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end
 		end
-
-		-- UPD AMMO HUD
-		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamntM40
-		elseif ammo > 0.5 then
-			clipamnt = -8 -- negative 8 means reloading
-		else
-			data.clipamntM727 = 0
-			clipamnt = -16
-		end
 	end
-end
-
-function client.drawM40()
-	if GetPlayerTool() ~= WPNID then -- shouldn't need the player pointer since this runs on client
-		return
-	end
-	if scopeddraw == true then
-		UiPush()
-			UiTranslate(UiCenter(), UiMiddle())
-			UiAlign("center middle")
-			UiImage("MOD/scope.png")
-		UiPop()
-	end
-	client.drawAmmo(clipamnt, CLIP_SIZE)
 end

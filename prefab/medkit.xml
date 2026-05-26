@@ -8,19 +8,11 @@
 	</group>
 	<group name="tool_space">
 		<body dynamic="false">
-			<vox texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/medkit.vox" object="kit" scale="0.4">
-				<vox pos="0.42 0.0 0.48" texture="12 0.25" blendtexture="3 0.1" file="MOD/vox/medkit.vox" object="strap1" scale="0.4">
-					<joint pos="-0.18 0.04 -0.04" rot="0.0 0.0 0.0" type="ball" size="0.1" rotstrength="0.0" rotspring="0.5" collide="false" sound="false" autodisable="false"/>
-				</vox>
-				<vox pos="0.42 0.0 -0.42" texture="12 0.25" blendtexture="3 0.1" file="MOD/vox/medkit.vox" object="strap2" scale="0.4">
-					<joint pos="-0.18 0.04 0.0" rot="0 0 0" type="ball" size="0.1" rotstrength="0.0" rotspring="0.5" collide="false" sound="false" autodisable="false"/>
-				</vox>
-				<vox pos="0.78 0.0 0.0" texture="12 0.25" blendtexture="3 0.1" file="MOD/vox/medkit.vox" object="straplong" scale="0.4">
-					<joint pos="0.0 0.04 0.28" rot="0.0 0.0 0.0" type="ball" size="0.0625" rotstrength="0.0" rotspring="0.5" collide="false" sound="false" autodisable="false"/>
-					<joint pos="0.0 0.04 -0.28" rot="0.0 0.0 0.0" type="ball" size="0.0625" rotstrength="0.0" rotspring="0.5" collide="false" sound="false" autodisable="false"/>
-				</vox>
+			<vox tags="invisible unbreakable nomerge" file="MOD/vox/SATHITBOX.vox" scale="1.0">
+				<vox tags="nomerge" pos="-0.14 0.06 -0.06" rot="0.0 0.0 0.0" texture="12 0.5" blendtexture="3 0.1" collide="false" file="MOD/vox/medkit.vox" scale="0.2"/>
 			</vox>
 		</body>
+		
 		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" pos="0.05 -0.05 0.4" rot="0.0 90.0 -35.0"/>
 		<location name="tp_run_rh" tags="name=tp_run_rh ik_hand" pos="0.05 -0.05 0.4" rot="0.0 90.0 -35.0"/>
 		<location name="tp_crouch_rh" tags="name=tp_crouch_rh ik_hand" pos="0.05 -0.05 0.4" rot="0.0 90.0 -35.0"/>

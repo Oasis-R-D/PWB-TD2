@@ -33,6 +33,7 @@ GLOBAL_20DEGREES = 0.17365
 
 -- MELEE
 #include "script/melee/crowber.lua"
+#include "script/melee/stunstick.lua"
 
 -- SPECIAL
 -- NONE
@@ -40,7 +41,6 @@ GLOBAL_20DEGREES = 0.17365
 -- ITEMS
 #include "script/items/medkit.lua"
 #include "script/items/grenade.lua"
-#include "script/items/satchel.lua"
 #include "script/items/tripmine.lua"
 
 ----------------------------------------------------------------------------------------------
@@ -56,11 +56,11 @@ GLOBAL_20DEGREES = 0.17365
 ----------------------------------------------------------------------------------------------
 
 -- TO-DO: 
--- - Gluon gun circular beam
--- - Finish gluon gun and displacer model
--- - Displacer prongs
--- - displacer ball and other billboard sprites doesn't angle correctly when in vehicle camera
--- - make separate player data for server to reduce memory usage
+-- - AR2 reload sfx
+-- - grenade
+-- - S.L.A.M
+-- - 357 reload sfx (re-do model?)
+-- - crossbow bolt goes through glass (port to bullets?)
 
 ----------------------------------------------------------------------------------------------
 
@@ -68,10 +68,11 @@ GLOBAL_20DEGREES = 0.17365
 function server.init()
    -- MELEE (SLOT 1)
    server.initCRBR()
+   server.initSTNSTK()
 
    -- SLOT 3
-   server.initMp5()
-   server.initM727()
+   server.initSMG1()
+   server.initAR2()
    server.initPYTH()
    server.initPIST9MM()
    server.initSG()
@@ -84,16 +85,16 @@ function server.init()
    -- ITEMS (SLOT 5/NONE)
    server.initMED()
    server.initFRAG()
-   server.initSATCH()
    server.initTRIP()
 end
 
 function server.tick(dt)
    -- MELEE
    server.tickCRBR(dt)
+   server.tickSTNSTK(dt)
 
-   server.tickMp5(dt)
-   server.tickM727(dt)
+   server.tickSMG1(dt)
+   server.tickAR2(dt)
    server.tickM40(dt)
    server.tickPYTH(dt)
    server.tickPIST9MM(dt)
@@ -104,7 +105,6 @@ function server.tick(dt)
    -- ITEMS
    server.tickMED(dt)
    server.tickFRAG(dt)
-   server.tickSATCH(dt)
    server.tickTRIP(dt)
 end
 
@@ -112,9 +112,10 @@ end
 function client.init()
    -- MELEE
    client.initCRBR()
+   client.initSTNSTK()
 
-   client.initMp5()
-   client.initM727()
+   client.initSMG1()
+   client.initAR2()
    client.initM40()
    client.initPYTH()
    client.initPIST9MM()
@@ -124,16 +125,16 @@ function client.init()
 
    -- ITEMS
    client.initFRAG()
-   client.initSATCH()
    client.initTRIP()
 end
 
 function client.tick(dt)
    -- MELEE
    client.tickCRBR(dt)
-
-   client.tickMp5(dt)
-   client.tickM727(dt)
+   client.tickSTNSTK(dt)
+   
+   client.tickSMG1(dt)
+   client.tickAR2(dt)
    client.tickM40(dt)
    client.tickPYTH(dt)
    client.tickPIST9MM(dt)
@@ -143,7 +144,6 @@ function client.tick(dt)
 
    -- ITEMS
    client.tickFRAG(dt)
-   client.tickSATCH(dt)
    client.tickTRIP(dt)
 end
 
@@ -151,10 +151,9 @@ end
 function client.draw()
 	if GetPlayerHealth() <= 0 or GetPlayerVehicle() ~= 0 then return end
    
-	client.drawM40()
 	client.drawPIST9MM()
-	client.drawM727()
-	client.drawMp5()
+	client.drawAR2()
+	client.drawSMG1()
 	client.drawPYTH()
 	client.drawSG()
 end

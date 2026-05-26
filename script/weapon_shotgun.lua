@@ -116,6 +116,9 @@ function client.tickSG(dt)
 	end
 end
 
+clipamnt = 0
+local camSineTime = nil
+
 -- in HL2, using the secondary fire with only enough ammo for the primary will fire primary instead.
 -- separated it to it's own function to allow that
 function client.primaryFireSG(p)
@@ -182,9 +185,6 @@ function client.primaryFireSG(p)
 	
 	data.recoil = RECOIL_AMNT
 end
-
-clipamnt = 0
-local camSineTime = nil
 
 function client.tickPlayerSG(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end

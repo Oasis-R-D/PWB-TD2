@@ -213,7 +213,7 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 		BloodVFX(SoundPoint, dir, playerdamage, playerhit)
 	end
 
-	return bHit, pdist
+	return bHit, pdist, playerhit
 end
 
 function server.SpawnFireHook(pos, chance)

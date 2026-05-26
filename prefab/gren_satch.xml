@@ -1,8 +1,8 @@
 <group name="instance=MOD/prefab/gren_satch.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
 	<script file="MOD/script/items/genericgrenade.lua">
 		<body tags="hlgrenade" dynamic="true">
-			<vox tags="invisible unbreakable nomerge" file="MOD/vox/SATHITBOX.vox" scale="1.0">
-				<vox tags="nomerge" pos="-0.14 0.06 -0.06" rot="0.0 0.0 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/satchel.vox" scale="0.4"/>
+			<vox tags="invisible unbreakable nomerge" file="MOD/vox/TRIPHITBOX.vox" scale="1.0">
+				<vox tags="nomerge" pos="-0.14 0.06 -0.06" rot="0.0 0.0 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/trip.vox" scale="0.4"/>
 			</vox>
 		</body>
 	</script>

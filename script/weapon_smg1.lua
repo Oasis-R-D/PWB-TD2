@@ -22,15 +22,15 @@ local PLAYERDAMAGE = 0.05
 local MAX_RANGE = 100.0
 local WPNID = "hl2smg1"
 local WPNNAME = "Combine SMG"
-local CASING_ORG = Vec(0.02, 0.25, -0.25)	-- casing origin
+local CASING_ORG = Vec(0.02, 0.15, -0.15)	-- casing origin
 
 -- Per weapon data storer
-MP5players = {}
+SMG1players = {}
 
-function createPlayerCLIENTdataMP5()
+function createPlayerCLIENTdataSMG1()
     return {
-		clipamntMP5 = CLIP_SIZE,
-		m203amntMP5 = 1,
+		clipamntSMG1 = CLIP_SIZE,
+		m203amntSMG1 = 1,
 		inreload = false,
 		coolDown = 0.0,
 		altCoolDown = 0.0,
@@ -41,41 +41,41 @@ function createPlayerCLIENTdataMP5()
 	}
 end
 
-function createPlayerSERVERdataMP5()
+function createPlayerSERVERdataSMG1()
     return {
 		firesound = nil,
 	}
 end
 
-function server.initMp5()
+function server.initSMG1()
 	RegisterTool(WPNID, WPNNAME, "MOD/prefab/9mmar.xml", 3)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 end
 
-function server.tickMp5(dt)
+function server.tickSMG1(dt)
 	for p in PlayersAdded() do
-		MP5players[p] = createPlayerCLIENTdataMP5()
+		SMG1players[p] = createPlayerCLIENTdataSMG1()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
 
 	for p in PlayersRemoved() do
-		MP5players[p] = nil
+		SMG1players[p] = nil
 	end
 
 	-- doesn't need server ticking
 	--for p in Players() do
-		--server.tickPlayerMp5(p, dt)
+		--server.tickPlayerSMG1(p, dt)
 	--end
 end
 
-function server.tickPlayerMp5(p, dt)
+function server.tickPlayerSMG1(p, dt)
 end
 
-function server.primaryFireMp5(p)
+function server.primaryFireSMG1(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local data = MP5players[p]
+	local data = SMG1players[p]
 	
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_5DEGREES, p)
 	
@@ -87,7 +87,7 @@ function server.primaryFireMp5(p)
 	server.depleteAmmo(p, WPNID)
 end
 
-function server.secondaryFireMp5(p)
+function server.secondaryFireSMG1(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	local _,pos,_,dir = GetPlayerAimInfo(mt.pos, MAX_RANGE, p)
@@ -107,23 +107,23 @@ function server.secondaryFireMp5(p)
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
 end
 
-function client.initMp5()
+function client.initSMG1()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
 	SetToolHaptic(WPNID, toolHaptic);
 end
 
-function client.tickMp5(dt)
+function client.tickSMG1(dt)
 	for p in PlayersAdded() do
-		MP5players[p] = createPlayerCLIENTdataMP5();
+		SMG1players[p] = createPlayerCLIENTdataSMG1();
 	end
 
 	for p in PlayersRemoved() do
-		MP5players[p] = nil
+		SMG1players[p] = nil
 	end
 
 	for p in Players() do
-		client.tickPlayerMp5(p, dt)
+		client.tickPlayerSMG1(p, dt)
 	end
 end
 
@@ -131,12 +131,12 @@ clipamnt = 0
 altclipamnt = 0
 local camSineTime = nil
 
-function client.tickPlayerMp5(p, dt)
+function client.tickPlayerSMG1(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if MP5players[p].dataReset == false then
-			MP5players[p] = createPlayerCLIENTdataMP5()
+		if SMG1players[p].dataReset == false then
+			SMG1players[p] = createPlayerCLIENTdataSMG1()
 		end
 		return
 	end
@@ -157,12 +157,12 @@ function client.tickPlayerMp5(p, dt)
 		return
 	end
 
-	local data = MP5players[p]
+	local data = SMG1players[p]
 
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
-	if InputPressed("r", p) and data.inreload == false and data.clipamntMP5 < CLIP_SIZE and ammo > 0.5 and data.clipamntMP5 ~= ammo then
+	if InputPressed("r", p) and data.inreload == false and data.clipamntSMG1 < CLIP_SIZE and ammo > 0.5 and data.clipamntSMG1 ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
 		data.inreload = true
@@ -170,10 +170,10 @@ function client.tickPlayerMp5(p, dt)
 	
 	if data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
-		data.m203amntMP5 = 1
-		data.clipamntMP5 = CLIP_SIZE
-		if data.clipamntMP5 > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntMP5 = ammo
+		data.m203amntSMG1 = 1
+		data.clipamntSMG1 = CLIP_SIZE
+		if data.clipamntSMG1 > ammo then -- make sure the clip cannot be higher than ammo
+			data.clipamntSMG1 = ammo
 		end
 	end
 
@@ -184,7 +184,7 @@ function client.tickPlayerMp5(p, dt)
 				local playervel = GetPlayerVelocity(p)
 
 				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFireMp5", p)
+					ServerCall("server.primaryFireSMG1", p)
 					camSineTime = 0
 					data.camAltMove = false
 					PlayHaptic(shootHaptic, 1)
@@ -222,8 +222,8 @@ function client.tickPlayerMp5(p, dt)
 					SpawnParticle(mt.pos, playervel, 0.125)
 				end
 					
-				data.clipamntMP5 = data.clipamntMP5 - 1
-				if data.clipamntMP5 > 0 then
+				data.clipamntSMG1 = data.clipamntSMG1 - 1
+				if data.clipamntSMG1 > 0 then
 					data.coolDown = FIRERATE
 					data.altCoolDown = FIRERATE
 				elseif ammo > 1 then
@@ -237,11 +237,11 @@ function client.tickPlayerMp5(p, dt)
 			end
 	end
 
-	if InputPressed("grab", p) and data.m203amntMP5 > 0.5 and GetPlayerCanUseTool(p) == true  then
+	if InputPressed("grab", p) and data.m203amntSMG1 > 0.5 and GetPlayerCanUseTool(p) == true  then
 			if data.altCoolDown < 0 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 				if IsPlayerLocal(p) then
-					ServerCall("server.secondaryFireMp5", p)
+					ServerCall("server.secondaryFireSMG1", p)
 					camSineTime = 0
 					data.camAltMove = true
 					PlayHaptic(shootHaptic, 1)
@@ -273,7 +273,7 @@ function client.tickPlayerMp5(p, dt)
 				
 				data.coolDown = 0.5
 				data.altCoolDown = ALTFIRERATE
-				data.m203amntMP5 = data.m203amntMP5 - 1
+				data.m203amntSMG1 = data.m203amntSMG1 - 1
 			end
 	end
 	
@@ -327,20 +327,20 @@ function client.tickPlayerMp5(p, dt)
 
 		-- UPD AMMO HUD
 		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamntMP5
-			altclipamnt = data.m203amntMP5
+			clipamnt = data.clipamntSMG1
+			altclipamnt = data.m203amntSMG1
 		elseif ammo > 0.5 then
 			clipamnt = -8 -- negative 8 means reloading
 			altclipamnt = -8
 		else
-			data.clipamntMP5 = 0
+			data.clipamntSMG1 = 0
 			clipamnt = -16
-			altclipamnt = data.m203amntMP5
+			altclipamnt = data.m203amntSMG1
 		end
 	end
 end
 
-function client.drawMp5()
+function client.drawSMG1()
 	if GetPlayerTool() ~= WPNID then -- shouldn't need the player pointer since this runs on client
 		return
 	end

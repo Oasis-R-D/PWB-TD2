@@ -8,17 +8,16 @@
 
 -- Per weapon constants
 local RECOIL_AMNT = 0.3
-local DAMAGE = 0.1
-local MAX_RANGE = 2.25
+local DAMAGE = 0.2
+local MAX_RANGE = 2 -- less range in HL2
 local WPNID = "hl2stunstick"
 local WPNNAME = "Stunstick"
-local COOLDOWN_MISS = 0.5
-local COOLDOWN_HIT = 0.25
+local COOLDOWN = 0.8
 
 -- Per weapon data storer
-CRBRplayers = {}
+STNSTKplayers = {}
 
-function createPlayerCLIENTdataCRBR()
+function createPlayerCLIENTdataSTNSTK()
     return {
 		coolDown = 0.0,
 		recoil = 0.0,
@@ -29,36 +28,36 @@ function createPlayerCLIENTdataCRBR()
 	}
 end
 
-function createPlayerSERVERdataCRBR()
+function createPlayerSERVERdataSTNSTK()
     return {
 		coolDown = 0.0,
 		dataReset = true,
 	}
 end
 
-function server.initCRBR()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/crowbar.xml", 1)
+function server.initSTNSTK()
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/stunstick.xml", 1)
 	SetToolAmmoPickupAmount(WPNID, 99999)
 end
 
-function server.tickCRBR(dt)
+function server.tickSTNSTK(dt)
 	for p in PlayersAdded() do
-		CRBRplayers[p] = createPlayerSERVERdataCRBR()
+		STNSTKplayers[p] = createPlayerSERVERdataSTNSTK()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 99999, p)
 	end
 
 	for p in PlayersRemoved() do
-		CRBRplayers[p] = nil
+		STNSTKplayers[p] = nil
 	end
 
 	for p in Players() do
-		server.tickPlayerCRBR(p, dt)
+		server.tickPlayerSTNSTK(p, dt)
 	end
 end
 
-function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for familiarity or whatever)
-	local data = CRBRplayers[m_pPlayer]
+function server.swingSTNSTK(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for familiarity or whatever)
+	local data = STNSTKplayers[m_pPlayer]
 	
 	local fDidHit = false
 	
@@ -69,8 +68,8 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 	
 	if pHit == false then
 		-- Miss
-		ClientCall(0, "client.swingCRBR", m_pPlayer, dt, fDidHit, SoundPoint, false, false)
-		data.coolDown = COOLDOWN_MISS
+		ClientCall(0, "client.swingSTNSTK", m_pPlayer, dt, fDidHit, SoundPoint, false, false)
+		data.coolDown = COOLDOWN
 	else
 		-- Hit
 		fDidHit = true
@@ -81,111 +80,111 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 			ApplyPlayerDamage(pHitPlayer, DAMAGE, WPNNAME, m_pPlayer)
 			BloodVFX(SoundPoint, dir, DAMAGE, pHitPlayer)
 		elseif pHitWorld ~= 0 then
-			ShootHook(SoundPoint, VecScale(pNorm, -1), "bullet", 0.1, 0.1, MAX_RANGE, m_pPlayer, WPNID, WPNNAME, 5) -- push objects, "dent" metal
-			MakeHole(SoundPoint, 0.75, 0.12, 0) -- stronger than sledge
+			ShootHook(SoundPoint, VecScale(pNorm, -1), "bullet", 0.1, 0.1, MAX_RANGE, m_pPlayer, WPNID, WPNNAME, 3) -- push objects, "dent" metal
+			MakeHole(SoundPoint, 0.6, 0.10, 0.0) -- stronger than sledge
 		end
 		-- PLAYER DAMAGE END
 
-		data.coolDown = COOLDOWN_HIT
+		data.coolDown = COOLDOWN
 		
-		ClientCall(0, "client.swingCRBR", m_pPlayer, dt, fDidHit, SoundPoint, pHitPlayer, pHitWorld)
+		ClientCall(0, "client.swingSTNSTK", m_pPlayer, dt, fDidHit, SoundPoint, pHitPlayer, pHitWorld)
 	end
-	
-	return fDidHit
 end
 
-function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
-	local data = CRBRplayers[m_pPlayer]
+function client.swingSTNSTK(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
+	local data = STNSTKplayers[m_pPlayer]
 	local vecSrc = GetPlayerEyeTransform(m_pPlayer)
 	data.toolAnimator.timeSinceFire = 0.0
 
-	PlaySound(LoadSound("MOD/snd/crowbar_miss.ogg"), vecSrc.pos, 0.5)
 	if hit == false then
 		-- Miss
+		PlaySound(LoadSound("MOD/snd/stunstick_swing0.ogg"), vecSrc.pos, 0.5)
 		data.toolAnimator.maxActionPoseTime = 0.1 -- stop midswing but further in
-		data.coolDown = COOLDOWN_MISS
+		data.coolDown = COOLDOWN
 	else
 		if pHitPlayer ~= 0 then
-			PlaySound(LoadSound("MOD/snd/crbr_hitplayer0.ogg"), pos, 0.5)
+			PlaySound(LoadSound("MOD/snd/stunstick_fleshhit0.ogg"), pos, 0.5)
+		else
+			PlaySound(LoadSound("MOD/snd/stunstick_impact0.ogg"), pos, 0.5)
 		end
 		data.recoildelay = 0.1 -- more hit feedback and randomness -- TO-DO: delay this
-		data.coolDown = COOLDOWN_HIT
+		data.coolDown = COOLDOWN
 		
 		data.toolAnimator.maxActionPoseTime = 0.05 -- stop midswing
 	end
 end
 
-function server.tickPlayerCRBR(p, dt)
+function server.tickPlayerSTNSTK(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
-	if GetPlayerHealth(p) <= 0 and CRBRplayers[p].dataReset == false then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerSERVERdataCRBR()
+	if GetPlayerHealth(p) <= 0 and STNSTKplayers[p].dataReset == false then
+		if STNSTKplayers[p].dataReset == false then
+			STNSTKplayers[p] = createPlayerSERVERdataSTNSTK()
 		end
 		return
 	end
 
-	if GetPlayerTool(p) ~= WPNID and CRBRplayers[p].dataReset == false then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerSERVERdataCRBR()
+	if GetPlayerTool(p) ~= WPNID and STNSTKplayers[p].dataReset == false then
+		if STNSTKplayers[p].dataReset == false then
+			STNSTKplayers[p] = createPlayerSERVERdataSTNSTK()
 		end
 		return
 	end
 	
-	local data = CRBRplayers[p]
+	local data = STNSTKplayers[p]
 
 	data.dataReset = false
 
 	--Check if firing
 	if InputDown("usetool", p) and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
-			server.swingCRBR(p, dt)
+			server.swingSTNSTK(p, dt)
 		end
 	end
 	
 	data.coolDown = data.coolDown - dt
 end
 
-function client.initCRBR()
+function client.initSTNSTK()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
 	SetToolHaptic(WPNID, toolHaptic);
 end
 
-function client.tickCRBR(dt)
+function client.tickSTNSTK(dt)
 	for p in PlayersAdded() do
-		CRBRplayers[p] = createPlayerCLIENTdataCRBR();
+		STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK();
 	end
 
 	for p in PlayersRemoved() do
-		CRBRplayers[p] = nil
+		STNSTKplayers[p] = nil
 	end
 
 	for p in Players() do
-		client.tickPlayerCRBR(p, dt)
+		client.tickPlayerSTNSTK(p, dt)
 	end
 end
 
-function client.tickPlayerCRBR(p, dt)
+function client.tickPlayerSTNSTK(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerCLIENTdataCRBR()
+		if STNSTKplayers[p].dataReset == false then
+			STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerCLIENTdataCRBR()
+		if STNSTKplayers[p].dataReset == false then
+			STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK()
 		end
 		return
 	end
 
 	local pt = GetPlayerTransform(p)
 
-	local data = CRBRplayers[p]
+	local data = STNSTKplayers[p]
 
 	data.dataReset = false
 

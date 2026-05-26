@@ -9,6 +9,7 @@
 local RELOAD_TIME = 1.5 -- seconds
 local RELOAD_SOUND = "MOD/snd/hkr.ogg"
 local ALT_FIRESOUND = "MOD/snd/ar2_altfire.ogg"
+local ALT_CHARGESOUND = "MOD/snd/ar2_altfirecharge.ogg"
 local PRIM_FIRESOUND = "MOD/snd/ar2_fire.ogg"
 local CLIP_SIZE = 30
 local PICKUP_SIZE = 30
@@ -22,17 +23,28 @@ local PLAYERDAMAGE = 0.11
 local MAX_RANGE = 100.0
 local WPNID = "hl2ar2"
 local WPNNAME = "Pulse Rifle"
-local CASING_ORG = Vec(0.02, 0.0, 0.1)
+
+local BALL_HIT = "MOD/snd/ar2_ball_bounce0.ogg"
+local BALL_DIE = "MOD/snd/ar2_ball_explode.ogg"
+local BALL_LOOP = "MOD/snd/ar2_ball_fly.ogg"
+
+local BALL_VELOCITY = 30
 
 -- Per weapon data storer
-M727players = {}
+AR2players = {}
 
-function createPlayerCLIENTdataM727()
+-- Stores data for all the BALLS
+AR2balls = {}
+
+function createPlayerCLIENTdataAR2()
     return {
-		clipamntM727 = CLIP_SIZE,
-		m203amnt727 = 1,
+		clipamntAR2 = CLIP_SIZE,
+		AR2altFireAmmo = 1,
+		inAltAttack = false,
+		chargedTime = nil,
 		inreload = false,
 		coolDown = 0.0,
+		altCoolDown = 0.0,
 		recoil = 0.0,
 		toolAnimator = ToolAnimator(),
 		camAltMove = false,
@@ -40,41 +52,153 @@ function createPlayerCLIENTdataM727()
 	}
 end
 
-function createPlayerSERVERdataM727()
+function createPlayerSERVERdataAR2()
     return {
 		firesound = nil,
 	}
 end
 
-function server.initM727()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/m727.xml", 3)
-	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
+function FindBallSERVERdataOpening()
+    local i = 1
+    while AR2balls[i] ~= nil do
+        i = i + 1
+    end
+    return i
 end
 
-function server.tickM727(dt)
+function createBallSERVERdataAR2(p, pos, dir)
+    return {
+		explTimer = 2, -- since when is it 2 seconds in HL2???
+		curDir = dir,
+		curPos = pos,
+		owner = p,
+	}
+end
+
+function server.initAR2()
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/m727.xml", 3)
+	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
+	ballFlyLoop = LoadLoop(BALL_LOOP)
+end
+
+function server.tickAR2(dt)
 	for p in PlayersAdded() do
-		M727players[p] = createPlayerSERVERdataM727()
+		AR2players[p] = createPlayerSERVERdataAR2()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
 
 	for p in PlayersRemoved() do
-		M727players[p] = nil
+		AR2players[p] = nil
 	end
 
 	-- doesn't need server ticking
 	--for p in Players() do
-		--server.tickPlayerM727(p, dt)
+		--server.tickPlayerAR2(p, dt)
 	--end
+
+	if #AR2balls == 0 then return end -- no AR2 balls
+	
+	for index, data in pairs(AR2balls) do
+		data.explTimer = data.explTimer - dt
+
+		PointLight(data.curPos, 0,0.35,1, 1)
+
+		if data.explTimer <= 0 then
+			for i=1,40 do
+				ParticleReset()
+				ParticleCollide(1)
+				ParticleRadius(0.02, 0)
+				ParticleGravity(-10)
+				ParticleEmissive(5)
+				ParticleStretch(5)
+				ParticleTile(4)
+				ParticleColor(1,1,1)
+				SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
+			end
+
+			for i=1,100 do
+				ParticleReset()
+				ParticleCollide(1)
+				ParticleRadius(math.random(1,5)*0.1, 0.5)
+				ParticleGravity(0)
+				ParticleTile(0)
+				ParticleColor(1,1,1, 0,0,0)
+				ParticleDrag(math.random(1,10)*0.1)
+				ParticleAlpha(0.5,0)
+				SpawnParticle(data.curPos, Vec(math.sin(i) * math.random(5,15), math.random(-3,3), math.cos(i) * math.random(5,15)), math.random(1,10)*0.1)
+			end
+
+			PlaySound(LoadSound(BALL_DIE), data.curPos, 1)
+			
+			AR2balls[index] = nil -- Delete this AR2 ball
+		else -- simulate physics
+			QueryRejectBody(GetToolBody(p))
+			QueryInclude("player")
+			local hit, dist, normal, shape = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
+			local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
+			
+			if dist == 0 then
+				endPoint = VecAdd(data.curPos, VecScale(data.curDir, 10 * dt))
+			end
+			
+			data.curPos = endPoint
+
+			if hit and dist ~= 0 then
+				-- do damage
+				ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
+				
+				-- reflect
+				data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2)) -- TO-DO: AR2 balls are weighted to target players in Half-Life: 2
+				
+				PlaySound(LoadSound(BALL_HIT), data.curPos, 0.5)
+
+				Paint(data.curPos, 0.7, "explosion", 0.8)
+				
+				-- spawn fire sometimes
+				server.SpawnFireHook(data.curPos, 66)
+
+				-- sparks
+				for i=1,20 do
+					ParticleReset()
+					ParticleCollide(1)
+					ParticleRadius(0.02, 0)
+					ParticleGravity(-10)
+					ParticleEmissive(5)
+					ParticleStretch(5)
+					ParticleTile(4)
+					ParticleColor(1,1,1)
+					SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
+				end
+			end
+
+			ParticleReset()
+			ParticleCollide(1)
+			ParticleRadius(0.3, 0)
+			ParticleGravity(0)
+			ParticleEmissive(5)
+			ParticleStretch(5)
+			ParticleTile(5)
+			local colorRnd = math.random()
+			local colorRnd2 = math.random()
+			local colorRnd3 = math.random()
+			ParticleColor(0,0.35,1, 1,0.35,0)
+			SpawnParticle(data.curPos, Vec((colorRnd - 0.5), (colorRnd2 - 0.5), (colorRnd3 - 0.5)), 0.3)
+			ParticleTile(4)
+			SpawnParticle(data.curPos, Vec((colorRnd - 0.5) * 2, (colorRnd2 - 0.5) * 2, (colorRnd3 - 0.5) * 2), 0.1)
+
+			PlayLoop(ballFlyLoop, data.curPos)
+		end
+	end
 end
 
-function server.tickPlayerM727(p, dt)
+function server.tickPlayerAR2(p, dt)
 end
 
-function server.primaryFireM727(p)
+function server.primaryFireAR2(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local data = M727players[p]
+	local data = AR2players[p]
 
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_3DEGREES, p)
 	
@@ -82,7 +206,23 @@ function server.primaryFireM727(p)
 
 	-- start fires sometimes (for the funny)
 	if hit == true then
+		pos = VecAdd(pos, VecScale(dir, dist)) -- recycle old var
 		server.SpawnFireHook(VecAdd(pos, VecScale(dir, dist)), 10)
+
+		ParticleReset()
+		ParticleCollide(1)
+		ParticleRadius(0.3, 0)
+		ParticleGravity(0)
+		ParticleEmissive(5)
+		ParticleStretch(5)
+		ParticleTile(5)
+		local colorRnd = math.random()
+		local colorRnd2 = math.random()
+		local colorRnd3 = math.random()
+		ParticleColor(0.1,0.35,0.8, 0.5,0.35,0.4)
+		SpawnParticle(pos, Vec((colorRnd - 0.5), (colorRnd2 - 0.5), (colorRnd3 - 0.5)), 0.3)
+		ParticleTile(4)
+		SpawnParticle(pos, Vec((colorRnd - 0.5) * 2, (colorRnd2 - 0.5) * 2, (colorRnd3 - 0.5) * 2), 0.1)
 	end
 
 	StopSound(data.firesound)
@@ -91,42 +231,37 @@ function server.primaryFireM727(p)
 	server.depleteAmmo(p, WPNID)
 end
 
-function server.secondaryFireM727(p)
+function server.secondaryFireAR2(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	local _,pos,_,dir = GetPlayerAimInfo(mt.pos, MAX_RANGE, p)
 
 	pos = VecAdd(pos, VecScale(dir, 0.5))
 	
-	local GrenTrans = Transform(pos, QuatLookAt(Vec(), dir))
-	local xml = "MOD/prefab/gren_m203.xml"
-	grenade_ent = Spawn(xml, GrenTrans)
-	SetTag(grenade_ent[2], "grenType", "m203")
-	SetTag(grenade_ent[2], "grenStyle", "impact")
-	SetTag(grenade_ent[2], "playerThrew", p)
-	SetBodyVelocity(grenade_ent[2], VecScale(dir, 20.32))
-	SetBodyAngularVelocity(grenade_ent[2], TransformToParentVec(GetPlayerEyeTransform(p), Vec(-rnd(2.54, 12.7), 0, 0)))
+	-- add AR2 ball to sim
+	AR2balls[FindBallSERVERdataOpening()] = createBallSERVERdataAR2(p, pos, dir)
 
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
 end
 
-function client.initM727()
+function client.initAR2()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
-	SetToolHaptic(WPNID, toolHaptic);
+	SetToolHaptic(WPNID, toolHaptic)
+	spinLoop = LoadLoop(ALT_CHARGESOUND)
 end
 
-function client.tickM727(dt)
+function client.tickAR2(dt)
 	for p in PlayersAdded() do
-		M727players[p] = createPlayerCLIENTdataM727();
+		AR2players[p] = createPlayerCLIENTdataAR2();
 	end
 
 	for p in PlayersRemoved() do
-		M727players[p] = nil
+		AR2players[p] = nil
 	end
 
 	for p in Players() do
-		client.tickPlayerM727(p, dt)
+		client.tickPlayerAR2(p, dt)
 	end
 end
 
@@ -134,12 +269,16 @@ clipamnt = 0
 altclipamnt = 0
 local camSineTime = nil
 
-function client.tickPlayerM727(p, dt)
+function getFullChargeTime()
+	return 2.5
+end
+
+function client.tickPlayerAR2(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if M727players[p].dataReset == false then
-			M727players[p] = createPlayerCLIENTdataM727()
+		if AR2players[p].dataReset == false then
+			AR2players[p] = createPlayerCLIENTdataAR2()
 		end
 		return
 	end
@@ -160,23 +299,24 @@ function client.tickPlayerM727(p, dt)
 		return
 	end
 	
-	local data = M727players[p]
+	local data = AR2players[p]
 	
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
-	if InputPressed("r", p) and data.inreload == false and data.clipamntM727 < CLIP_SIZE and ammo > 0.5 and data.clipamntM727 ~= ammo then
+	if InputPressed("r", p) and data.inreload == false and data.clipamntAR2 < CLIP_SIZE and ammo > 0.5 and data.clipamntAR2 ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
+		data.altCoolDown = RELOAD_TIME
 		data.inreload = true
 	end
 	
 	if data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
-		data.m203amnt727 = 1
-		data.clipamntM727 = CLIP_SIZE
-		if data.clipamntM727 > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntM727 = ammo
+		data.AR2altFireAmmo = 1
+		data.clipamntAR2 = CLIP_SIZE
+		if data.clipamntAR2 > ammo then -- make sure the clip cannot be higher than ammo
+			data.clipamntAR2 = ammo
 		end
 	end
 
@@ -187,40 +327,12 @@ function client.tickPlayerM727(p, dt)
 				local playervel = GetPlayerVelocity(p)
 
 				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFireM727", p)
+					ServerCall("server.primaryFireAR2", p)
 					camSineTime = 0
 					data.camAltMove = false
 					PlayHaptic(shootHaptic, 1)
-
-					-- shell ejection
-					local toolBody = GetToolBody(p)
-					local transform = GetBodyTransform(toolBody)
-					local eject_origin = TransformToParentPoint(transform, Vec(CASING_ORG[1],CASING_ORG[2],CASING_ORG[3]))
-					local eject_direction=TransformToParentVec(transform, Vec(1, -0.2, 0))
-					ParticleReset()
-					ParticleGravity(rnd(-2, -8))
-					ParticleRadius(0.02)
-					ParticleAlpha(1)
-					ParticleColor(0.8, 0.6, 0)
-					ParticleTile(6)
-					ParticleDrag(0.125)
-					ParticleSticky(0.5)
-					ParticleCollide(1)
-					SpawnParticle(eject_origin, VecAdd(VecScale(eject_direction,3), playervel), 5)
 				end
-				
-				-- shell ejection
-				ParticleReset()
-				ParticleGravity(rnd(-2, -8))
-				ParticleRadius(0.02)
-				ParticleAlpha(1)
-				ParticleColor(0.8, 0.6, 0)
-				ParticleTile(6)
-				ParticleDrag(0.125)
-				ParticleSticky(0.5)
-				ParticleCollide(1)
-				SpawnParticle(eject_origin, VecAdd(VecScale(eject_direction,3), playervel), 5) -- player velocity isn't functioning how i'd like but whatever
-				
+
 				-- muzzleflash
 				for i=0, 3 do
 					ParticleReset()
@@ -237,8 +349,8 @@ function client.tickPlayerM727(p, dt)
 					SpawnParticle(mt.pos, playervel, 0.125)
 				end
 				
-				data.clipamntM727 = data.clipamntM727 - 1
-				if data.clipamntM727 > 0 then
+				data.clipamntAR2 = data.clipamntAR2 - 1
+				if data.clipamntAR2 > 0 then
 					data.coolDown = FIRERATE
 				elseif ammo > 1 then
 					PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
@@ -250,47 +362,69 @@ function client.tickPlayerM727(p, dt)
 			end
 	end
 
-	if InputPressed("grab", p) and data.m203amnt727 > 0.5 and GetPlayerCanUseTool(p) == true  then
-			if data.coolDown < 0 then
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
-				if IsPlayerLocal(p) then
-					ServerCall("server.secondaryFireM727", p)
-					camSineTime = 0
-					data.camAltMove = true
-					PlayHaptic(shootHaptic, 1)
-				end
-
-				local toolBody = GetToolBody(p)
-				local playervel = GetPlayerVelocity(p)
-				local vectuh = VecAdd(mt.pos, Vec(0.15, -0.2, 0))
-				-- muzzleflash
-				for i=0, 4 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.1, 0.15), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(vectuh, playervel, 0.125)
-					
-				end
-				
-				data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
-				
-				data.recoil = 1.5 * RECOIL_AMNT
-				
-				data.coolDown = ALTFIRERATE
-				data.m203amnt727 = data.m203amnt727 - 1
-			end
+	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true and data.AR2altFireAmmo > 0 then
+		if data.altCoolDown < 0 then
+			data.coolDown = 1.0
+			data.altCoolDown = 1.5
+			data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
+			data.inAltAttack = true
+		end
 	end
 	
+	if data.chargedTime ~= nil and data.inAltAttack == true then -- deplete timer and check if ready
+		data.chargedTime = data.chargedTime + dt -- increase timer
+		local pitch = (data.chargedTime) * (150 / getFullChargeTime()) + 100
+		if pitch > 250 then
+			pitch = 250
+		end
+		pitch = pitch / 100
+
+		data.recoil = math.min(0.1, data.recoil + (pitch * 0.5))
+
+		PlayLoop(spinLoop, mt.pos, 1, true)
+		
+		local playervel = GetPlayerVelocity(p)
+		-- muzzleflash
+		ParticleReset()
+		ParticleGravity(0)
+		ParticleRadius(0.1 + (data.chargedTime / 2))
+		ParticleAlpha(1, 0)
+		ParticleTile(1)
+		ParticleDrag(0)
+		ParticleRotation(rnd(10, -10), 0)
+		ParticleSticky(0)
+		ParticleEmissive(5, 1)
+		ParticleCollide(0)
+		ParticleColor(0,0.35,1, 1,0.35,0)
+		SpawnParticle(mt.pos, playervel, 0.125)
+	
+		if data.chargedTime >= 0.5 then
+			SetSoundLoopProgress(spinLoop, 0.0)
+
+			PointLight(mt.pos, 0.063, 0.5, 0.36, 5)
+
+			data.toolAnimator.forceActionPose = false
+
+			if IsPlayerLocal(p) then
+				ServerCall("server.secondaryFireAR2", p)
+				camSineTime = 0
+				PlayHaptic(shootHaptic, 1)
+			end
+
+			data.AR2altFireAmmo = data.AR2altFireAmmo - 1
+
+			data.recoil = RECOIL_AMNT
+			data.chargedTime = nil
+			data.inAltAttack = false
+		end
+	elseif data.inAltAttack == true then -- start timer
+		data.chargedTime = 0
+		data.toolAnimator.forceActionPose = true
+	end
+
 	-- decrease firing cooldown and recoil
 	data.coolDown = data.coolDown - dt
+	data.altCoolDown = data.altCoolDown - dt
 	data.recoil = data.recoil - dt
 	
 	-- RECOIL
@@ -342,20 +476,20 @@ function client.tickPlayerM727(p, dt)
 
 		-- UPD AMMO HUD
 		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamntM727
-			altclipamnt = data.m203amnt727
+			clipamnt = data.clipamntAR2
+			altclipamnt = data.AR2altFireAmmo
 		elseif ammo > 0.5 then
 			clipamnt = -8 -- negative 8 means reloading
 			altclipamnt = -8
 		else
-			data.clipamntM727 = 0
+			data.clipamntAR2 = 0
 			clipamnt = -16
-			altclipamnt = data.m203amnt727
+			altclipamnt = data.AR2altFireAmmo
 		end
 	end
 end
 
-function client.drawM727()
+function client.drawAR2()
 	if GetPlayerTool() ~= WPNID then -- shouldn't need the player pointer since this runs on client
 		return
 	end

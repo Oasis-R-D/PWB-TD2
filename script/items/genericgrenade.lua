@@ -157,7 +157,7 @@ function server.tick(dt)
 		QueryRejectBody(grenBody)
 		QueryRejectPlayer(server.playerThrew)
 		QueryInclude("player")
-		local pHit = QueryRaycast(grenPos, VecNormalize(grenVel), grenspeed * dt + 0.2, 0.33)
+		local pHit = QueryRaycast(grenPos, VecNormalize(grenVel), grenspeed * dt + 0.2, 0.1) -- 0.1 instead of 1/3 since HL2 grenade is smaller
 		if pHit or grenspeed <= 0.01 then
 			server.shouldExplode = true
 		end
