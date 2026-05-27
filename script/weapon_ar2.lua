@@ -284,6 +284,7 @@ function client.tickPlayerAR2(p, dt)
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
+		AR2players[p].chargedTime = nil
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
@@ -366,12 +367,12 @@ function client.tickPlayerAR2(p, dt)
 		if data.altCoolDown < 0 then
 			data.coolDown = 1.0
 			data.altCoolDown = 1.5
-			data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
-			data.inAltAttack = true
+			data.chargedTime = 0
+			data.toolAnimator.forceActionPose = true
 		end
 	end
 	
-	if data.chargedTime ~= nil and data.inAltAttack == true then -- deplete timer and check if ready
+	if data.chargedTime ~= nil then -- deplete timer and check if ready
 		data.chargedTime = data.chargedTime + dt -- increase timer
 		local pitch = (data.chargedTime) * (150 / getFullChargeTime()) + 100
 		if pitch > 250 then
@@ -415,11 +416,7 @@ function client.tickPlayerAR2(p, dt)
 
 			data.recoil = RECOIL_AMNT
 			data.chargedTime = nil
-			data.inAltAttack = false
 		end
-	elseif data.inAltAttack == true then -- start timer
-		data.chargedTime = 0
-		data.toolAnimator.forceActionPose = true
 	end
 
 	-- decrease firing cooldown and recoil

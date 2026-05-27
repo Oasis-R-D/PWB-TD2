@@ -168,7 +168,7 @@ function server.primaryFireM40(p)
 
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
 
-	local GrenTrans = Transform(pos, QuatLookAt(Vec(), dir))
+	local GrenTrans = Transform(mt.pos, QuatLookAt(Vec(), dir))
 	local xml = "MOD/prefab/crossbow_bolt.xml"
 	local boltEnt = Spawn(xml, GrenTrans)
 

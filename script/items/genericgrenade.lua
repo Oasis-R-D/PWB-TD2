@@ -152,6 +152,16 @@ function server.tick(dt)
 			server.shouldExplode = true
 		end
 
+		ParticleReset()
+		ParticleRadius(0.075, 0)
+		ParticleGravity(0)
+		ParticleEmissive(5)
+		ParticleStretch(5)
+		ParticleTile(15)
+		ParticleColor(1,0,0)
+		SpawnParticle(grenPos, Vec(0,0,0), 0.5)
+		SpawnParticle(grenPos, Vec(0,0,0), 0.5)
+
 	elseif server.grenStyle == "impact" then -- check if impacting
 		local grenspeed = VecLength(grenVel)
 		QueryRejectBody(grenBody)
