@@ -88,7 +88,7 @@ function server.primaryFireSLAM(p)
 		SetTag(satch_ent[2], "grenStyle", "lasermine")
 		SetTag(satch_ent[2], "playerThrew", p)
 
-		PlaySound(LoadSound(PLACE_SOUND), mt.pos, 0.7)
+		PlaySound(LoadSound(PLACE_SOUND), GrenTrans.pos, 0.7)
 	else -- throw as satchel
 		local mt = GetToolLocationWorldTransform("muzzle", p)
 		local data = SLAMplayers[p]
@@ -121,7 +121,6 @@ function server.primaryFireSLAM(p)
 end
 
 function server.secondaryFireSLAM(p) -- detonate satchel placed slams
-	local ammo = GetToolAmmo(WPNID, p)
 	local data = SLAMplayers[p]
 
 	for i, currentBod in pairs(data.satchelBodies) do
@@ -132,9 +131,6 @@ function server.secondaryFireSLAM(p) -- detonate satchel placed slams
 end
 
 function client.initSLAM()
-	TMW_ON = LoadSound("MOD/snd/mine_charge.ogg")
-	TMW_ON2 = LoadSound("MOD/snd/mine_deploy.ogg")
-
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
 	SetToolHaptic(WPNID, toolHaptic)
@@ -182,19 +178,8 @@ function client.tickPlayerSLAM(p, dt)
 	
 	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
-			local _,pos,_,angThrow = GetPlayerAimInfo(GetPlayerEyeTransform(p).pos, 3.0, p)
-
-			local dir = TransformToParentVec(GetPlayerEyeTransform(p), Vec(0, 0, -1))
-			local hit, dist, normal = QueryRaycast(pos, dir, 3.0, 0)
-
-			local pt = GetPlayerTransform(p)
 			if IsPlayerLocal(p) then
 				ServerCall("server.primaryFireSLAM", p)
-			end
-			
-			if hit then
-				PlaySound(TMW_ON, VecAdd(pos, VecScale(dir, dist)), 1)
-				PlaySound(TMW_ON2, VecAdd(pos, VecScale(dir, dist)), 10)
 			end
 
 			data.toolAnimator.timeSinceFire = 0.0

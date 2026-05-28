@@ -10,8 +10,8 @@ local PICKUP_SIZE = 5.0
 local RECOIL_AMNT = 0.075
 local FIRERATE = 0.5
 local FUZESTART = 2.5
-local WPNID = "hlgrenade"
-local WPNNAME = "Mk2 Frag"
+local WPNID = "hl2grenade"
+local WPNNAME = "MK3A2 Frag" -- MK3A2 is a concussion grenade, weapon is called a frag and acts like one though
 local THROW_SOUND = "MOD/snd/slam_throw.ogg"
 
 -- Per weapon data storer
