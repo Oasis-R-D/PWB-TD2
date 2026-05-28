@@ -30,9 +30,12 @@ function server.initTags()
 	end
 
 	if server.grenStyle == "timed" then
-		SetProperty(grenBody, "restitution", 0.66)
+		SetProperty(grenBody, "restitution", 0.33)
 		local timer = tonumber(GetTagValue(grenBody, "timer"))
 		server.explTimer = timer
+		server.explTimerStart = timer
+		server.tickTimer = 1.0 -- next tick sfx
+		PlaySound(GN_TK, getBodyCenter(grenBody))
 	end
 
 	if server.grenStyle == "lasermine" then
@@ -53,6 +56,7 @@ function server.init()
 	server.runTime = 0.0
 	
 	TM_ON = LoadSound("MOD/snd/mine_activate.ogg")
+	GN_TK = LoadSound("MOD/snd/grenade_tick.ogg")
 end
 
 function server.explode(pos)
@@ -60,10 +64,12 @@ function server.explode(pos)
 		Explosion(pos, 1.5)
 	elseif server.grenType == "m203" then
 		Explosion(pos, 1.0)
+
+	-- SLAM mine does less damage
 	elseif server.grenType == "satchel" then
-		Explosion(pos, 2.0)
-	elseif server.grenType == "mine" then
 		Explosion(pos, 1.75)
+	elseif server.grenType == "mine" then
+		Explosion(pos, 1.5)
 	end
 end
 
@@ -90,8 +96,7 @@ function client.tick(dt)
 
 		t.rot = QuatAlignXZ(xAxis, zAxis)
 
-		DrawSprite(LaserSPR, t, client.raycastDist, 0.1, 0.0, 0.83, 0.77, 0.25, true, true)
-		DrawLine(client.vecSrc, VecAdd(client.vecSrc, VecScale(client.vecDir,  client.raycastDist)), 0.0, 0.83, 0.77, 0.25)
+		DrawSprite(LaserSPR, t, client.raycastDist, 0.04, 1.0, 0.0, 0.0, 0.125, true, true)
 	end
 end
 
@@ -152,6 +157,19 @@ function server.tick(dt)
 			server.shouldExplode = true
 		end
 
+		server.tickTimer = server.tickTimer - dt
+		if server.tickTimer <= 0 then
+			PlaySound(GN_TK, getBodyCenter(grenBody))
+			if server.runTime > (server.explTimerStart - 1.5) then
+				server.tickTimer = 0.3
+			else
+				server.tickTimer = 1.0
+			end
+		end
+
+		local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(-0.1, 0.2, 0), GetBodyTransform(grenBody).rot))
+		local laserStartVec = laserStartTrans.pos
+
 		ParticleReset()
 		ParticleRadius(0.075, 0)
 		ParticleGravity(0)
@@ -159,8 +177,8 @@ function server.tick(dt)
 		ParticleStretch(5)
 		ParticleTile(15)
 		ParticleColor(1,0,0)
-		SpawnParticle(grenPos, Vec(0,0,0), 0.5)
-		SpawnParticle(grenPos, Vec(0,0,0), 0.5)
+		SpawnParticle(laserStartVec, Vec(0,0,0), 0.5)
+		SpawnParticle(laserStartVec, Vec(0,0,0), 0.75)
 
 	elseif server.grenStyle == "impact" then -- check if impacting
 		local grenspeed = VecLength(grenVel)
@@ -186,7 +204,7 @@ function server.tick(dt)
 			server.laserMineOn = true 
 			PlaySound(TM_ON, GetBodyTransform(grenBody).pos, 10)
 
-			local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(0.02, -0.02, -0.18), GetBodyTransform(grenBody).rot))
+			local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(-0.14, 0.2, -0.18), GetBodyTransform(grenBody).rot))
 			local laserStartVec = laserStartTrans.pos
 			local direction = TransformToParentVec(GetBodyTransform(grenBody), Vec(0, 0, -1))
 
@@ -198,7 +216,7 @@ function server.tick(dt)
 			ClientCall(0, "client.updateLaser", laserStartVec, direction, pDist)
 
 		elseif server.laserMineOn == true then
-			local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(0.02, -0.02, -0.18), GetBodyTransform(grenBody).rot))
+			local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(-0.14, 0.2, -0.18), GetBodyTransform(grenBody).rot))
 			local laserStartVec = laserStartTrans.pos
 			local direction = TransformToParentVec(GetBodyTransform(grenBody), Vec(0, 0, -1))
 

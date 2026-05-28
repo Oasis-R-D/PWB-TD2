@@ -19,7 +19,7 @@
 		<location name="tp_action_lh" tags="name=tp_action_lh ik_hand" pos="-0.2 -0.15 -0.03" rot="0.0 90.0 0.0"/>
 		<location name="tp_run_lh" tags="name=tp_run_lh ik_hand" pos="-0.2 -0.15 -0.03" rot="0.0 90.0 0.0"/>
 		<location name="tp_crouch_lh" tags="name=tp_crouch_lh ik_hand" pos="-0.2 -0.15 -0.03" rot="0.0 90.0 0.0"/>
-		<location name="muzzle" tags="name=muzzle" pos="0.02 0.26 -0.24" rot="0 0 0"/>
+		<location name="muzzle" tags="name=muzzle" pos="0.055 0.085 -0.24" rot="0 0 0"/>
 	</group>
 </group>
 

@@ -2,8 +2,7 @@
 	<script file="MOD/script/items/genericgrenade.lua">
 		<body tags="hlgrenade" dynamic="true">
 			<vox tags="invisible unbreakable nomerge" file="MOD/vox/HITBOX.vox" scale="1.0">
-				<vox tags="nomerge" pos="-0.1 -0.005 -0.1" rot="0.0 45 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/frag.vox" object="body" scale="0.3"/>
-				<vox tags="nomerge" pos="-0.065 0.115 -0.085" rot="0.0 0.0 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/frag.vox" object="head" scale="0.3"/>
+				<vox tags="nomerge" pos="-0.1 -0.005 -0.1" rot="0.0 45 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/frag.vox" object="body" scale="0.2"/>
 			</vox>
 		</body>
 	</script>

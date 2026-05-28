@@ -97,6 +97,7 @@ function server.tickPlayerPIST9MM(p, dt)
 	data.dataReset = false
 	
 	-- Check our penalty time decay
+	-- NOTE: no idea who's idea it was to make spread not decay when holding
 	if InputDown("usetool", p) == false and data.coolDown < 0 then
 		data.AccuracyPenalty = data.AccuracyPenalty - dt
 		data.AccuracyPenalty = clamp(data.AccuracyPenalty, 0.0, PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME)

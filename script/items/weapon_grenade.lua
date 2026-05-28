@@ -9,7 +9,7 @@
 local PICKUP_SIZE = 5.0
 local RECOIL_AMNT = 0.075
 local FIRERATE = 0.5
-local FUZESTART = 3.0
+local FUZESTART = 2.5
 local WPNID = "hlgrenade"
 local WPNNAME = "Mk2 Frag"
 
@@ -54,28 +54,17 @@ function server.tickPlayerFRAG(p, dt)
 	end
 end
 
-function server.primaryFireFRAG(p, cookedTime)
-	cookedTime = cookedTime or 0
+function server.primaryFireFRAG(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	local ammo = GetToolAmmo(WPNID, p)
 
-	local _,pos,_,angThrow = GetPlayerAimInfo(GetPlayerEyeTransform(p).pos, MAX_RANGE, p)
+	local _,pos,_,angThrow = GetPlayerAimInfo(mt.pos, MAX_RANGE, p)
 	
 	pos = VecAdd(pos, VecScale(angThrow, 0.25))
 	
-	if angThrow[1] < 0 then
-		angThrow[1] = -0.254 + angThrow[1] * ((2.286 - 0.254) / 2.286)
-	else
-		angThrow[1] = -0.254 + angThrow[1] * ((2.286 + 0.254) / 2.286)
-	end
-
-	local flVel = (2.286 - angThrow[1]) * 6.5
-	if flVel > 25.4 then
-		flVel = 25.4
-	end
-
-	local velocity = VecAdd(GetPlayerVelocity(p), TransformToParentVec(GetPlayerEyeTransform(p), Vec(0, 0, -flVel)))
+	local throwVel = VecAdd(VecScale(angThrow, 17.78), Vec(0, 1.27, 0)) -- angthrow should be multiplied by 8.89, but that doesn't seem right in game
+	local velocity = VecAdd(GetPlayerVelocity(p), throwVel)
 
 	local GrenTrans = Transform(pos, QuatLookAt(Vec(), angThrow))
 	local xml = "MOD/prefab/gren_frag.xml"
@@ -83,10 +72,11 @@ function server.primaryFireFRAG(p, cookedTime)
 
 	SetTag(grenade_ent[2], "grenType", "frag")
 	SetTag(grenade_ent[2], "grenStyle", "timed")
-	SetTag(grenade_ent[2], "timer", FUZESTART - cookedTime)
+	SetTag(grenade_ent[2], "timer", FUZESTART)
 	SetTag(grenade_ent[2], "playerThrew", p)
 
 	SetBodyVelocity(grenade_ent[2], velocity)
+	SetBodyAngularVelocity(grenade_ent[2], Vec(5.08,0,rnd(-15.24,15.24)))
 
 	if ammo < 9999 then
 		SetToolAmmo(WPNID, ammo-1, p)
@@ -161,7 +151,7 @@ function client.tickPlayerFRAG(p, dt)
 			data.toolAnimator.forceSecondaryActionPose = false
 
 			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFireFRAG", p, data.chargedTime)
+				ServerCall("server.primaryFireFRAG", p)
 			end
 
 			data.coolDown = FIRERATE

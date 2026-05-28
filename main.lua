@@ -27,21 +27,21 @@ GLOBAL_20DEGREES = 0.17365
 #include "script/weapon_smg1.lua"
 #include "script/weapon_ar2.lua"
 #include "script/weapon_shotgun.lua"
-#include "script/m40a1.lua"
+#include "script/weapon_crossbow.lua"
 #include "script/weapon_python.lua"
 #include "script/weapon_pistol.lua"
 
 -- MELEE
-#include "script/melee/crowber.lua"
-#include "script/melee/stunstick.lua"
+#include "script/melee/weapon_crowbar.lua"
+#include "script/melee/weapon_stunstick.lua"
 
 -- SPECIAL
 -- NONE
 
 -- ITEMS
 #include "script/items/medkit.lua"
-#include "script/items/grenade.lua"
-#include "script/items/tripmine.lua"
+#include "script/items/weapon_grenade.lua"
+#include "script/items/weapon_slam.lua"
 
 ----------------------------------------------------------------------------------------------
 
@@ -56,11 +56,9 @@ GLOBAL_20DEGREES = 0.17365
 ----------------------------------------------------------------------------------------------
 
 -- TO-DO: 
--- - AR2 reload sfx
--- - grenade
--- - S.L.A.M
--- - 357 reload sfx (re-do model?)
--- - crossbow bolt goes through glass (port to bullets?)
+-- - redo 357 model?
+-- - crossbow model
+-- - ar2 ball needs to target players!!
 
 ----------------------------------------------------------------------------------------------
 
@@ -85,7 +83,7 @@ function server.init()
    -- ITEMS (SLOT 5/NONE)
    server.initMED()
    server.initFRAG()
-   server.initTRIP()
+   server.initSLAM()
 end
 
 function server.tick(dt)
@@ -105,7 +103,7 @@ function server.tick(dt)
    -- ITEMS
    server.tickMED(dt)
    server.tickFRAG(dt)
-   server.tickTRIP(dt)
+   server.tickSLAM(dt)
 end
 
 -- load haptics 
@@ -125,7 +123,7 @@ function client.init()
 
    -- ITEMS
    client.initFRAG()
-   client.initTRIP()
+   client.initSLAM()
 end
 
 function client.tick(dt)
@@ -144,7 +142,7 @@ function client.tick(dt)
 
    -- ITEMS
    client.tickFRAG(dt)
-   client.tickTRIP(dt)
+   client.tickSLAM(dt)
 end
 
 -- Draw the magazine amount hud

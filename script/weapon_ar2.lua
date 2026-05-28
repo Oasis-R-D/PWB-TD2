@@ -7,7 +7,7 @@
 
 -- Per weapon constants
 local RELOAD_TIME = 1.5 -- seconds
-local RELOAD_SOUND = "MOD/snd/hkr.ogg"
+local RELOAD_SOUND = "MOD/snd/ar2_reload.ogg"
 local ALT_FIRESOUND = "MOD/snd/ar2_altfire.ogg"
 local ALT_CHARGESOUND = "MOD/snd/ar2_altfirecharge.ogg"
 local PRIM_FIRESOUND = "MOD/snd/ar2_fire.ogg"
@@ -81,6 +81,24 @@ function server.initAR2()
 	ballFlyLoop = LoadLoop(BALL_LOOP)
 end
 
+function isAttractiveTarget(p, index)
+	local data = AR2balls[index]
+
+	if GetPlayerHealth(p) <= 0 				then return false end -- dont target dead players
+	if data.owner == p						then return false end -- dont target owner
+
+	-- TO-DO: skip team mates!!!
+
+	local dir = VecNormalize(VecSub(GetPlayerPos(p), data.curPos))
+
+	local _, _, _, foundTarget = QueryShot(data.curPos, dir, 26.01)
+	
+	if foundTarget == 0 					then return false end -- dont target nonvisible players
+	if foundTarget ~= p 					then return false end -- not aiming for you!!
+
+	return true
+end
+
 function server.tickAR2(dt)
 	for p in PlayersAdded() do
 		AR2players[p] = createPlayerSERVERdataAR2()
@@ -135,7 +153,8 @@ function server.tickAR2(dt)
 		else -- simulate physics
 			QueryRejectBody(GetToolBody(p))
 			QueryInclude("player")
-			local hit, dist, normal, shape = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
+			local hit, dist, normal = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
+
 			local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
 			
 			if dist == 0 then
@@ -146,14 +165,68 @@ function server.tickAR2(dt)
 
 			if hit and dist ~= 0 then
 				-- do damage
-				ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
+				_, _, ImpactedPlayer = ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
 				
-				-- reflect
-				data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2)) -- TO-DO: AR2 balls are weighted to target players in Half-Life: 2
-				
-				PlaySound(LoadSound(BALL_HIT), data.curPos, 0.5)
+				-- Get the best target
+				local bestTarget = -1
+				if isMP() == true then
+					if ImpactedPlayer ~= 0 then -- target next player directly
+						local bestDist = 100
+						for target in Players() do
+							if isAttractiveTarget(target, index) == true and target ~= ImpactedPlayer then
+								local distance = VecLength(VecSub(GetPlayerPos(target), data.curPos))
+								if distance < bestDist then
+									bestTarget = target
+									bestDist = distance
+								end
+							end
+						end
+					else -- normal targetting -- TO-DO: broken
+						local targettablePlayers = {}
 
-				Paint(data.curPos, 0.7, "explosion", 0.8)
+						table.insert(targettablePlayers, ImpactedPlayer)
+
+						local dir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2))
+						local foundTarget = -1
+
+						repeat
+							for _, alreadyHit in pairs(targettablePlayers) do
+								QueryRejectPlayer(alreadyHit)
+							end
+
+							_, _, _, foundTarget = QueryShot(data.curPos, dir, 26.01, 6.5)
+							table.insert(targettablePlayers, foundTarget)
+						until foundTarget == 0
+
+						if #targettablePlayers ~= 0 then
+							local bestDist = 100
+							for target in pairs(targettablePlayers) do
+								if isAttractiveTarget(target, index) == true then
+									local between = VecSub(GetPlayerPos(target), data.curPos)
+									local dotprod = VecDot(VecNormalize(between), dir)
+									if dotprod > 0.966 then
+										local distance = VecLength(between)
+										if distance < bestDist then
+											bestTarget = target
+											bestDist = distance
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+
+				-- reflect
+				if bestTarget ~= -1 then -- found a good target
+					data.curDir = VecNormalize(VecSub(GetPlayerPos(bestTarget), data.curPos))
+					Paint(data.curPos, 0.83, "explosion", 0.8) -- bigger (no real reason)
+				else
+					data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2))
+					Paint(data.curPos, 0.66, "explosion", 0.8)
+				end
+
+				PlaySound(LoadSound(BALL_HIT), data.curPos, 0.5)
 				
 				-- spawn fire sometimes
 				server.SpawnFireHook(data.curPos, 66)
