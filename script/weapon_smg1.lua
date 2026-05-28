@@ -130,6 +130,8 @@ end
 clipamnt = 0
 altclipamnt = 0
 local camSineTime = nil
+local camRecoilY = 0
+local camRecoilX = 0
 
 function client.tickPlayerSMG1(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
@@ -186,6 +188,8 @@ function client.tickPlayerSMG1(p, dt)
 				if IsPlayerLocal(p) then
 					ServerCall("server.primaryFireSMG1", p)
 					camSineTime = 0
+					camRecoilY = rnd(-1, 1)
+					camRecoilX = rnd(-1, 1)
 					data.camAltMove = false
 					PlayHaptic(shootHaptic, 1)
 
@@ -243,6 +247,8 @@ function client.tickPlayerSMG1(p, dt)
 				if IsPlayerLocal(p) then
 					ServerCall("server.secondaryFireSMG1", p)
 					camSineTime = 0
+					camRecoilY = 0
+					camRecoilX = 1
 					data.camAltMove = true
 					PlayHaptic(shootHaptic, 1)
 				end
@@ -305,21 +311,20 @@ function client.tickPlayerSMG1(p, dt)
 		-- CAMERA MOVEMENT
 		if camSineTime ~= nil then
 			local x = camSineTime
-			local e = math.exp(1)
-			local balance = -15 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
-			local amp = 10 -- how intense (y at the peak will not equal this though)
+			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be negative)
+			local amp = 25 -- how intense (y at the peak will not equal this though)
 
 			local equation = nil
 			if data.camAltMove == true then
-				balance = -20
+				balance = -15
 				amp = 800
-				equation = amp * ((math.sin(CAMALTMOVETIME * x) * e^(balance * x)) * x)
+				equation = amp * ((math.sin(CAMALTMOVETIME * x) * math.exp(balance * x)) * x)
 			else
-				equation = amp * ((math.sin(CAMMOVETIME * x) * e^(balance * x)) * x)
+				equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
 			end
 
 			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -1.0, 0), equation))
+				local t = Transform(Vec(), QuatAxisAngle(Vec(camRecoilX, camRecoilY, 0), equation))
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end

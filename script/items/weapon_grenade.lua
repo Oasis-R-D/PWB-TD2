@@ -12,6 +12,7 @@ local FIRERATE = 0.5
 local FUZESTART = 2.5
 local WPNID = "hlgrenade"
 local WPNNAME = "Mk2 Frag"
+local THROW_SOUND = "MOD/snd/slam_throw.ogg"
 
 -- Per weapon data storer
 FRAGplayers = {}
@@ -78,6 +79,8 @@ function server.primaryFireFRAG(p)
 	SetBodyVelocity(grenade_ent[2], velocity)
 	SetBodyAngularVelocity(grenade_ent[2], Vec(5.08,0,rnd(-15.24,15.24)))
 
+	PlaySound(LoadSound(THROW_SOUND), mt.pos, 0.7)
+	
 	if ammo < 9999 then
 		SetToolAmmo(WPNID, ammo-1, p)
 	end

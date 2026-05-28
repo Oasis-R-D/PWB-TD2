@@ -118,6 +118,7 @@ end
 
 clipamnt = 0
 local camSineTime = nil
+local camRecoilY = 0
 
 -- in HL2, using the secondary fire with only enough ammo for the primary will fire primary instead.
 -- separated it to it's own function to allow that
@@ -137,6 +138,7 @@ function client.primaryFireSG(p)
 	if IsPlayerLocal(p) then
 		ServerCall("server.primaryFireSG", p)
 		camSineTime = 0
+		camRecoilY = rnd(-0.8, 0.8)
 		data.camAltMove = false
 		PlayHaptic(shootHaptic, 1)
 
@@ -260,6 +262,7 @@ function client.tickPlayerSG(p, dt)
 				if IsPlayerLocal(p) then
 					ServerCall("server.secondaryFireSG", p)
 					camSineTime = 0
+					camRecoilY = 0
 					data.camAltMove = true
 					PlayHaptic(shootHaptic, 1)
 
@@ -395,21 +398,20 @@ function client.tickPlayerSG(p, dt)
 		-- CAMERA MOVEMENT
 		if camSineTime ~= nil then
 			local x = camSineTime
-			local e = math.exp(1)
-			local balance = -30 -- where the peak is (10 for middle, higher to move left also has to be neagtive)
-			local amp = 700-- how intense (y at the peak will not equal this though)
+			local balance = -15 -- where the peak is (10 for middle, higher to move left also has to be negative)
+			local amp = 200 -- how intense (y at the peak will not equal this though)
 
 			local equation = nil
 			if data.camAltMove == true then
 				balance = -15
 				amp = 1000
-				equation = amp * ((math.sin(CAMALTMOVETIME * x) * e^(balance * x)) * x)
+				equation = amp * ((math.sin(CAMALTMOVETIME * x) * math.exp(balance * x)) * x)
 			else
-				equation = amp * ((math.sin(CAMMOVETIME * x) * e^(balance * x)) * x)
+				equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
 			end
 
 			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -0.5, 0), equation))
+				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, camRecoilY, 0), equation))
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end

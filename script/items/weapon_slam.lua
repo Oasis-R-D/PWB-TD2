@@ -11,7 +11,8 @@ local RECOIL_AMNT = 0.075
 local FIRERATE = 0.5
 local WPNID = "hl2slam"
 local WPNNAME = "S.L.A.M"
-
+local THROW_SOUND = "MOD/snd/slam_throw.ogg"
+local PLACE_SOUND = "MOD/snd/slam_place.ogg"
 -- Per weapon data storer
 SLAMplayers = {}
 
@@ -86,6 +87,8 @@ function server.primaryFireSLAM(p)
 		SetTag(satch_ent[2], "grenType", "mine")
 		SetTag(satch_ent[2], "grenStyle", "lasermine")
 		SetTag(satch_ent[2], "playerThrew", p)
+
+		PlaySound(LoadSound(PLACE_SOUND), mt.pos, 0.7)
 	else -- throw as satchel
 		local mt = GetToolLocationWorldTransform("muzzle", p)
 		local data = SLAMplayers[p]
@@ -108,6 +111,8 @@ function server.primaryFireSLAM(p)
 		SetBodyAngularVelocity(satch_ent[2], TransformToParentVec(GetPlayerEyeTransform(p), Vec(0, 10.16, 0)))
 
 		table.insert(data.satchelBodies, satch_ent[2])
+
+		PlaySound(LoadSound(THROW_SOUND), mt.pos, 0.7)
 	end
 
 	if ammo < 9999 then
@@ -122,7 +127,7 @@ function server.secondaryFireSLAM(p) -- detonate satchel placed slams
 	for i, currentBod in pairs(data.satchelBodies) do
 		SetTag(currentBod, "detonate")
 	end
-	
+
 	data.satchelBodies = {} -- empty active satchels
 end
 

@@ -182,6 +182,16 @@ function server.tick(dt)
 
 	elseif server.grenStyle == "impact" then -- check if impacting
 		local grenspeed = VecLength(grenVel)
+
+		ParticleReset()
+		ParticleGravity(-0.1)
+		ParticleType("smoke")
+		ParticleRadius(0.08, 0.15)
+		ParticleAlpha(0.125, 0)
+		ParticleDrag(1.0)
+		ParticleColor(0.25,0.25,0.25)
+		SpawnParticle(grenPos, Vec(0,0,0), 1)
+
 		QueryRejectBody(grenBody)
 		QueryRejectPlayer(server.playerThrew)
 		QueryInclude("player")
