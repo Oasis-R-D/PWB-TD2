@@ -58,7 +58,6 @@ GLOBAL_20DEGREES = 0.17365
 -- TO-DO: 
 -- - redo 357 model?
 -- - crossbow model
--- - ar2 ball needs to target players!!
 
 ----------------------------------------------------------------------------------------------
 

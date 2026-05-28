@@ -87,38 +87,31 @@ function server.tickM40(dt)
 		else
 			PointLight(data.curPos, 0.66,0.22,0, 0.2)
 
-			QueryRejectBody(GetToolBody(p))
 			QueryRejectBody(data.model)
-			QueryRejectPlayer(p)
-			QueryInclude("player")
-			local hit, dist, normal, shape = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
-			local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
+			local hit, dist, shape, hitPlayer, _, normal = QueryShot(data.curPos, data.curDir, BALL_VELOCITY * dt, 0.0, data.owner)
+
+			data.curPos= VecAdd(data.curPos, VecScale(data.curDir, dist))
 			
 			data.totalDist = data.totalDist + dist
-
-			if dist == 0 then
-				data.totalDist = data.totalDist + 10 * dt
-				endPoint = VecAdd(data.curPos, VecScale(data.curDir, 10 * dt))
-			end
-			
-			data.curPos = endPoint
 
 			SetBodyTransform(data.model, Transform(data.curPos, QuatLookAt(Vec(), data.curDir)))
 
 			if hit and dist ~= 0 then
-				
-				-- get mat type BEFORE we break it
-				local matType = GetShapeMaterialAtPosition(shape, endPoint)
-
 				-- do damage
-				local _, _, hitPlayer = ShootHook(data.curPos, data.curDir, "bullet", DAMAGE, PLAYERDAMAGE, 0.25, data.owner, WPNID, WPNNAME)
-				
 				if hitPlayer ~= 0 then
 					PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
+
+					ApplyPlayerDamage(hitPlayer, PLAYERDAMAGE, WPNNAME, data.owner)
+					BloodVFX(VecAdd(data.curPos, VecScale(data.curDir, dist)), data.curDir, PLAYERDAMAGE, hitPlayer)
 
 					Delete(data.model)
 					CrossbowBolts[index] = nil -- delete the bolt
 				else
+					-- get mat type BEFORE we break it
+					local matType = GetShapeMaterialAtPosition(shape, data.curPos)
+
+					ShootHook(data.curPos, data.curDir, "bullet", DAMAGE, 0, 10, data.owner, WPNID, WPNNAME)
+
 					Paint(data.curPos, 0.33, "explosion", 0.75)
 
 					-- spawn fire sometimes

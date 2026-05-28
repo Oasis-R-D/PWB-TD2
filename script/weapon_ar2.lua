@@ -151,7 +151,7 @@ function server.tickAR2(dt)
 			
 			AR2balls[index] = nil -- Delete this AR2 ball
 		else -- simulate physics
-			QueryRejectBody(GetToolBody(p))
+			QueryRejectBody(GetToolBody(data.owner))
 			QueryInclude("player")
 			local hit, dist, normal = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
 
@@ -296,6 +296,8 @@ function server.primaryFireAR2(p)
 		SpawnParticle(pos, Vec((colorRnd - 0.5), (colorRnd2 - 0.5), (colorRnd3 - 0.5)), 0.3)
 		ParticleTile(4)
 		SpawnParticle(pos, Vec((colorRnd - 0.5) * 2, (colorRnd2 - 0.5) * 2, (colorRnd3 - 0.5) * 2), 0.1)
+
+		PointLight(pos, 0.22,0.66,0.9, 0.33)
 	end
 
 	StopSound(data.firesound)
@@ -396,7 +398,7 @@ function client.tickPlayerAR2(p, dt)
 
 	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
 			if data.coolDown < 0 then		
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
+				PointLight(mt.pos, 0.22,0.66,0.9, 3)
 
 				local playervel = GetPlayerVelocity(p)
 

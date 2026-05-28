@@ -186,7 +186,7 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 	if playerhit == 0 then
 		-- use normal shooting for world
 		Shoot(pos, dir, shoottype, damage, range, player, weaponid)
-	else
+	elseif playerdamage > 0 then
 		-- play player impact SFX
 		local SoundPoint = VecAdd(pos, VecScale(dir, pdist))
 		PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), SoundPoint, 2)

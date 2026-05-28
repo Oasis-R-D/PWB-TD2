@@ -119,10 +119,10 @@ function server.secondaryFireSLAM(p) -- detonate satchel placed slams
 	local ammo = GetToolAmmo(WPNID, p)
 	local data = SLAMplayers[p]
 
-	for i = 1, #data.satchelBodies do -- loop through active satchels and explode them
-    	local currentBod = data.satchelBodies[i]
-		if currentBod ~= nil then SetTag(currentBod, "detonate") end
+	for i, currentBod in pairs(data.satchelBodies) do
+		SetTag(currentBod, "detonate")
 	end
+	
 	data.satchelBodies = {} -- empty active satchels
 end
 
