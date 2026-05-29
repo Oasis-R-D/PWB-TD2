@@ -20,7 +20,7 @@ local PRIM_FIRESOUND = "MOD/snd/shotgun_fire.ogg"
 local ALT_FIRESOUND = "MOD/snd/shotgun_dbl_fire.ogg"
 local PUMP_SOUND = "MOD/snd/shotgun_cock.ogg"
 local CLIP_SIZE = 6
-local PICKUP_SIZE = 12
+local PICKUP_SIZE = 6
 local RECOIL_AMNT = 0.2
 local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRE_TIME) -- Cam movement sine multiplier, FIRERATE is how long until it's over
 local CAMALTMOVETIME = (2 * math.pi) * (0.5 / ALTFIRE_TIME) -- Cam movement sine multiplier, ALTFIRERATE is how long until it's over
@@ -73,8 +73,13 @@ end
 function server.primaryFireSG(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	for i=0, 6 do -- 7
-		local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_10DEGREES, p)
+	-- first shot is laser accurate
+	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
+	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
+
+	-- rest aren't
+	for i=0, 5 do -- 6
+		pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_10DEGREES, p)
 		ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 	end
 	
