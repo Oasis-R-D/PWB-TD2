@@ -168,6 +168,8 @@ function server.primaryFireM40(p)
 
 	local ammo = GetToolAmmo(WPNID, p)
 
+	if ammo <= 0 then return end
+	
 	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
 
 	local GrenTrans = Transform(mt.pos, QuatLookAt(Vec(), dir))
@@ -258,7 +260,7 @@ function client.tickPlayerM40(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
-	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
+	if InputDown("usetool", p) and canFire(p, ammo, ammo) and data.hasBolt == true then -- not a good idea to use hasbolt here, only way to prevent THE BUG
 			if data.coolDown < 0 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 				if IsPlayerLocal(p) then
@@ -269,17 +271,14 @@ function client.tickPlayerM40(p, dt)
 				
 				local playervel = GetPlayerVelocity(p)
 
-				
 				data.hasBolt = false
 				client.suppress(p, data.hasBolt)
 
-				data.timetobolt = 0.842
-				if ammo-1 > 0 then
-					data.timetobolt = 0.842
-					data.coolDown = FIRERATE
-					data.altCoolDown = SCOPEFIREDELAY
-				end
-				
+				if ammo-1 > 0 then data.timetobolt = 0.842 end
+
+				data.coolDown = FIRERATE
+				data.altCoolDown = SCOPEFIREDELAY
+
 				data.recoil = RECOIL_AMNT
 			end
 	end

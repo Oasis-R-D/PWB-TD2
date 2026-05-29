@@ -221,11 +221,7 @@ function client.tickPlayerSG(p, dt)
 	
 	if InputPressed("r", p) and data.inreload == false and data.clipamntSG < CLIP_SIZE and ammo > 0.5 and data.clipamntSG ~= ammo then
 		local reloadtime = nil
-		local shellsneedingloading = CLIP_SIZE - data.clipamntSG
-
-		if shellsneedingloading > ammo then
-			shellsneedingloading = ammo
-		end
+		local shellsneedingloading = math.min(CLIP_SIZE - data.clipamntSG, ammo)
 
 		if data.clipamntSG > 0 then
 			reloadtime = RELOAD_TIME * shellsneedingloading
@@ -243,79 +239,71 @@ function client.tickPlayerSG(p, dt)
 	
 	if data.inreload == true and data.coolDown < 0 then -- reload the clip
 		data.inreload = false
-		data.clipamntSG = CLIP_SIZE
-		if data.clipamntSG > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntSG = ammo
-		end
+		data.clipamntSG = math.min(CLIP_SIZE, ammo)
 	end
 				
-	if InputDown("usetool", p) and ammo > 0.5 and data.clipamntSG > 0.5 and GetPlayerCanUseTool(p) == true then
+	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntSG) then
 		if data.coolDown < 0 then				
 			client.primaryFireSG(p)
 		end
 	end
 
-	if InputDown("grab", p) and GetPlayerCanUseTool(p) == true and ammo >= 1 then 
+	if InputDown("grab", p) and canFire(p, ammo-1, data.clipamntSG-1) then 
 		if data.coolDown < 0 then
-			if data.clipamntSG > 1.5 then
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
-				if IsPlayerLocal(p) then
-					ServerCall("server.secondaryFireSG", p)
-					camSineTime = 0
-					camRecoilY = 0
-					data.camAltMove = true
-					PlayHaptic(shootHaptic, 1)
+			PointLight(mt.pos, 1, 0.7, 0.5, 3)
+			if IsPlayerLocal(p) then
+				ServerCall("server.secondaryFireSG", p)
+				camSineTime = 0
+				camRecoilY = 0
+				data.camAltMove = true
+				PlayHaptic(shootHaptic, 1)
 
-					-- shell ejection
-					data.shellstopump = 2
-				end
-
-				local toolBody = GetToolBody(p)
-				local playervel = GetPlayerVelocity(p)
-				
-				-- muzzleflash
-				for i=0, 4 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.15, 0.2), 0.44)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(mt.pos, playervel, 0.125)
-				end
-
-				data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
-				
-				data.clipamntSG = data.clipamntSG - 2
-				if data.clipamntSG > 0 then
-					data.coolDown = ALTFIRE_TIME + PUMP_TIME
-					data.pumptime = ALTFIRE_TIME
-				elseif ammo > 1 then
-					local reloadtime = 0
-					
-					local shellsneedingloading = CLIP_SIZE - data.clipamntSG
-					if shellsneedingloading > ammo then
-						shellsneedingloading = ammo
-					end
-
-					reloadtime = (shellsneedingloading * RELOAD_TIME) + RELOAD_END_TIME
-					data.pumptime = reloadtime
-					data.shellstoload = shellsneedingloading
-					data.coolDown = reloadtime
-					data.shellinserttime = RELOAD_START_TIME
-					data.inreload = true
-				end
-				
-				data.recoil = 1.5 * RECOIL_AMNT
-			else -- has enough ammo to primary but not secondary, so fire primary
-				client.primaryFireSG(p)
+				-- shell ejection
+				data.shellstopump = 2
 			end
+
+			local toolBody = GetToolBody(p)
+			local playervel = GetPlayerVelocity(p)
+			
+			-- muzzleflash
+			for i=0, 4 do
+				ParticleReset()
+				ParticleGravity(0)
+				ParticleRadius(rnd(0.15, 0.2), 0.44)
+				ParticleAlpha(1, 0)
+				ParticleTile(5)
+				ParticleDrag(0)
+				ParticleRotation(rnd(10, -10), 0)
+				ParticleSticky(0)
+				ParticleEmissive(5, 1)
+				ParticleCollide(0)
+				ParticleColor(1,0.35,0, 1,0,0)
+				SpawnParticle(mt.pos, playervel, 0.125)
+			end
+
+			data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
+			
+			data.clipamntSG = data.clipamntSG - 2
+			if data.clipamntSG > 0 then
+				data.coolDown = ALTFIRE_TIME + PUMP_TIME
+				data.pumptime = ALTFIRE_TIME
+			elseif ammo > 1 then
+				local reloadtime = 0
+				
+				local shellsneedingloading = math.min(CLIP_SIZE - data.clipamntSG, ammo)
+
+				reloadtime = (shellsneedingloading * RELOAD_TIME) + RELOAD_END_TIME
+				data.pumptime = reloadtime
+				data.shellstoload = shellsneedingloading
+				data.coolDown = reloadtime
+				data.shellinserttime = RELOAD_START_TIME
+				data.inreload = true
+			end
+			
+			data.recoil = 1.5 * RECOIL_AMNT
 		end
+	elseif InputDown("grab", p) and canFire(p, ammo, data.clipamntSG) then -- has enough ammo to primary but not secondary, so fire primary
+		client.primaryFireSG(p)
 	end
 	
 	-- decrease firing cooldown and recoil
@@ -323,8 +311,7 @@ function client.tickPlayerSG(p, dt)
 	data.recoil = data.recoil - dt
 	
 	-- SHELL LOADING
-	if data.shellinserttime == nil then
-	else
+	if data.shellinserttime ~= nil then
 		data.shellinserttime = data.shellinserttime - dt
 		
 		if data.shellinserttime < 0 and data.shellstoload >= 0.5 then
@@ -341,8 +328,7 @@ function client.tickPlayerSG(p, dt)
 	-- END SHELL LOADING
 	
 	-- PUMPING
-	if data.pumptime == nil then
-	else
+	if data.pumptime ~= nil then
 		data.pumptime = data.pumptime - dt
 	
 		-- pump the gun

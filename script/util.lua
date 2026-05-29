@@ -2,6 +2,10 @@
 
 #include "script/include/player.lua"
 
+function canFire(p, ammo, clip)
+	return ammo > 0.5 and clip > 0.5 and GetPlayerCanUseTool(p) == true
+end
+
 --Return a random vector of desired length
 function rndVec(length)
 	local v = VecNormalize(Vec(math.random(-100,100), math.random(-100,100), math.random(-100,100)))

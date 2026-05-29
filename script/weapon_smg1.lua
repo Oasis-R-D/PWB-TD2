@@ -172,14 +172,11 @@ function client.tickPlayerSMG1(p, dt)
 	
 	if data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
-		data.m203amntSMG1 = 1
-		data.clipamntSMG1 = CLIP_SIZE
-		if data.clipamntSMG1 > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntSMG1 = ammo
-		end
+		if data.clipamntSMG1 <= 0 then data.m203amntSMG1 = 1 end
+		data.clipamntSMG1 = math.min(CLIP_SIZE, ammo)
 	end
 
-	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
+	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntSMG1) then
 			if data.coolDown < 0 then	
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 
@@ -241,7 +238,7 @@ function client.tickPlayerSMG1(p, dt)
 			end
 	end
 
-	if InputPressed("grab", p) and data.m203amntSMG1 > 0.5 and GetPlayerCanUseTool(p) == true  then
+	if InputPressed("grab", p) and canFire(p, data.m203amntSMG1, data.m203amntSMG1) then
 			if data.altCoolDown < 0 then
 				PointLight(mt.pos, 1, 0.7, 0.5, 3)
 				if IsPlayerLocal(p) then

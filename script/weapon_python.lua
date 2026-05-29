@@ -150,51 +150,48 @@ function client.tickPlayerPYTH(p, dt)
 	
 	if data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
-		data.clipamntPYTH = CLIP_SIZE
-		if data.clipamntPYTH > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntPYTH = ammo
-		end
+		data.clipamntPYTH = math.min(CLIP_SIZE, ammo)
 	end
 
-	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
-			if data.coolDown < 0 then	
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
-				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFirePYTH", p)
-					camSineTime = 0
-					PlayHaptic(shootHaptic, 1)
-				end
-				
-				local playervel = GetPlayerVelocity(p)
-
-				-- muzzleflash
-				for i=0, 3 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.1, 0.15), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(mt.pos, playervel, 0.125)
-				end
-					
-				data.clipamntPYTH = data.clipamntPYTH - 1
-				if data.clipamntPYTH > 0 then
-					data.coolDown = FIRERATE
-				elseif ammo > 1 then
-					PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
-					data.coolDown = RELOAD_TIME
-					data.timeuntileject = 1.35
-					data.inreload = true
-				end
-				
-				data.recoil = RECOIL_AMNT
+	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntPYTH) then
+		if data.coolDown < 0 then	
+			PointLight(mt.pos, 1, 0.7, 0.5, 3)
+			if IsPlayerLocal(p) then
+				ServerCall("server.primaryFirePYTH", p)
+				camSineTime = 0
+				PlayHaptic(shootHaptic, 1)
 			end
+			
+			local playervel = GetPlayerVelocity(p)
+
+			-- muzzleflash
+			for i=0, 3 do
+				ParticleReset()
+				ParticleGravity(0)
+				ParticleRadius(rnd(0.1, 0.15), 0.33)
+				ParticleAlpha(1, 0)
+				ParticleTile(5)
+				ParticleDrag(0)
+				ParticleRotation(rnd(10, -10), 0)
+				ParticleSticky(0)
+				ParticleEmissive(5, 1)
+				ParticleCollide(0)
+				ParticleColor(1,0.35,0, 1,0,0)
+				SpawnParticle(mt.pos, playervel, 0.125)
+			end
+				
+			data.clipamntPYTH = data.clipamntPYTH - 1
+			if data.clipamntPYTH > 0 then
+				data.coolDown = FIRERATE
+			elseif ammo > 1 then
+				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+				data.coolDown = RELOAD_TIME
+				data.timeuntileject = 1.35
+				data.inreload = true
+			end
+			
+			data.recoil = RECOIL_AMNT
+		end
 	end
 	
 	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then

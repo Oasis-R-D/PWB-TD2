@@ -132,7 +132,7 @@ function client.tickPlayerFRAG(p, dt)
 	
 	data.toolAnimator.maxActionPoseTime = 0.075
 
-	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
+	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true and data.inAttack == false then
 		if data.coolDown < 0 then
 			data.inAttack = true
 		end

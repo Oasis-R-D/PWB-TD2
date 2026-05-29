@@ -390,55 +390,52 @@ function client.tickPlayerAR2(p, dt)
 	if data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
 		data.AR2altFireAmmo = 1
-		data.clipamntAR2 = CLIP_SIZE
-		if data.clipamntAR2 > ammo then -- make sure the clip cannot be higher than ammo
-			data.clipamntAR2 = ammo
+		data.clipamntAR2 = math.min(CLIP_SIZE, ammo)
+	end
+
+	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntAR2) then
+		if data.coolDown < 0 then		
+			PointLight(mt.pos, 0.22,0.66,0.9, 3)
+
+			local playervel = GetPlayerVelocity(p)
+
+			if IsPlayerLocal(p) then
+				ServerCall("server.primaryFireAR2", p)
+				camSineTime = 0
+				data.camAltMove = false
+				PlayHaptic(shootHaptic, 1)
+			end
+
+			-- muzzleflash
+			for i=0, 3 do
+				ParticleReset()
+				ParticleGravity(0)
+				ParticleRadius(rnd(0.12, 0.17), 0.33)
+				ParticleAlpha(1, 0)
+				ParticleTile(5)
+				ParticleDrag(0)
+				ParticleRotation(rnd(10, -10), 0)
+				ParticleSticky(0)
+				ParticleEmissive(5, 1)
+				ParticleCollide(0)
+				ParticleColor(0,0.35,1, 1,0.35,0)
+				SpawnParticle(mt.pos, playervel, 0.125)
+			end
+			
+			data.clipamntAR2 = data.clipamntAR2 - 1
+			if data.clipamntAR2 > 0 then
+				data.coolDown = FIRERATE
+			elseif ammo > 1 then
+				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+				data.coolDown = RELOAD_TIME
+				data.inreload = true
+			end
+			
+			data.recoil = RECOIL_AMNT
 		end
 	end
 
-	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
-			if data.coolDown < 0 then		
-				PointLight(mt.pos, 0.22,0.66,0.9, 3)
-
-				local playervel = GetPlayerVelocity(p)
-
-				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFireAR2", p)
-					camSineTime = 0
-					data.camAltMove = false
-					PlayHaptic(shootHaptic, 1)
-				end
-
-				-- muzzleflash
-				for i=0, 3 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.12, 0.17), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(0,0.35,1, 1,0.35,0)
-					SpawnParticle(mt.pos, playervel, 0.125)
-				end
-				
-				data.clipamntAR2 = data.clipamntAR2 - 1
-				if data.clipamntAR2 > 0 then
-					data.coolDown = FIRERATE
-				elseif ammo > 1 then
-					PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
-					data.coolDown = RELOAD_TIME
-					data.inreload = true
-				end
-				
-				data.recoil = RECOIL_AMNT
-			end
-	end
-
-	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true and data.AR2altFireAmmo > 0 then
+	if InputPressed("grab", p) and canFire(p, data.AR2altFireAmmo, data.AR2altFireAmmo) then
 		if data.altCoolDown < 0 then
 			data.coolDown = 1.0
 			data.altCoolDown = 1.5
