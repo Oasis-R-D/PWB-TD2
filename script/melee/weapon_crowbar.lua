@@ -121,7 +121,7 @@ function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
 		end
 
 		if pHitPlayer ~= 0 then
-			PlaySound(LoadSound("MOD/snd/crbr_hitplayer0.ogg"), pos, 0.5)
+			PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), pos, 0.5)
 		end
 		data.recoildelay = 0.1 -- more hit feedback and randomness -- TO-DO: delay this
 		

@@ -58,8 +58,7 @@ GLOBAL_20DEGREES = 0.17365
 -- TO-DO: 
 -- - redo 357 model?
 -- - grenade rolling
--- - crowbar player hit sfx
--- - bullet hit sfx (HL2's or 1's?)
+
 ----------------------------------------------------------------------------------------------
 
 -- declare weapons, pickup amounts
