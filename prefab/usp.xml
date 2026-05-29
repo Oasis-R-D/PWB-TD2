@@ -1,4 +1,4 @@
-<group name="instance=MOD/prefab/glock.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
+<group name="instance=MOD/prefab/usp.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
 	<group name="eye_space">
 		<location name="fp_action" tags="name=fp_action" pos="0.2 -0.35 -0.9" rot="2.0 4.5 0.0"/>
 		<location name="fp_run" tags="name=fp_run" pos="0.2 -0.35 -0.8" rot="20.0 40.0 0.0"/>
@@ -8,10 +8,11 @@
 	</group>
 	<group name="tool_space">
 		<body dynamic="false">
-			<vox pos="-0.027 -0.08 -0.04" texture="11 0.25" blendtexture="7 0.05" file="MOD/vox/glock.vox" object="left" scale="0.1"/>
-			<vox pos="0.008 -0.08 -0.04" texture="11 0.25" blendtexture="7 0.05" file="MOD/vox/glock.vox" object="right" scale="0.1"/>
-			<vox pos="-0.012 0.11 -0.04" rot="0.0 0.0 0.0" texture="8 0.25" blendtexture="7 0.2" file="MOD/vox/glock.vox" object="slide" scale="0.05"/>
-			<vox pos="-0.012 0.08 -0.24" rot="0.0 0.0 0.0" texture="10 0.05" blendtexture="3 0.05" file="MOD/vox/glock.vox" object="comp" scale="0.05"/>
+			<vox pos="-0.027 -0.08 -0.04" texture="11 0.25" blendtexture="7 0.05" file="MOD/vox/usp.vox" object="left" scale="0.1"/>
+			<vox pos="0.008 -0.08 -0.04" texture="11 0.25" blendtexture="7 0.05" file="MOD/vox/usp.vox" object="right" scale="0.1"/>
+			<vox pos="-0.012 0.11 -0.04" rot="0.0 0.0 0.0" texture="8 0.25" blendtexture="7 0.2" file="MOD/vox/usp.vox" object="slide" scale="0.05"/>
+			<vox pos="-0.01 0.106 0.106" rot="30.0 0.0 0.0" texture="8 0.25" blendtexture="7 0.2" file="MOD/vox/usp.vox" object="hammer" scale="0.025"/>
+			<vox pos="-0.012 0.08 -0.24" rot="0.0 0.0 0.0" texture="10 0.05" blendtexture="3 0.05" file="MOD/vox/usp.vox" object="comp" scale="0.05"/>
 		</body>
 		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" pos="0.0 0.05 0.0" rot="0.0 90.0 0.0"/>
 		<location name="tp_run_rh" tags="name=tp_run_rh ik_hand" pos="0.0 0.05 0.0" rot="0.0 90.0 0.0"/>

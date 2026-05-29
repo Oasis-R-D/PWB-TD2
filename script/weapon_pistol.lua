@@ -16,8 +16,8 @@ local RELOAD_TIME = 1.433 -- seconds
 local RELOAD_SOUND = "MOD/snd/pistol_reload.ogg"
 local PRIM_FIRESOUND = "MOD/snd/pistol_fire.ogg"
 local NONCLIENTPRIM_FIRESOUND = "MOD/snd/pistol_fireNC.ogg" -- glock has diff sounds when shot by NPCs (in this case, other players)
-local CLIP_SIZE = 17.0
-local PICKUP_SIZE = 17.0
+local CLIP_SIZE = 18.0
+local PICKUP_SIZE = 18.0
 local RECOIL_AMNT = 0.17
 local FIRERATE = 0.5 -- held down fire rate
 local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, PISTOL_ACCURACY_SHOT_PENALTY_TIME is how long until it's over
@@ -55,7 +55,7 @@ function createPlayerSERVERdataPIST9MM()
 end
 
 function server.initPIST9MM()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/glock.xml", 3)
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/usp.xml", 3)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 end
 

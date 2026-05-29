@@ -1,0 +1,32 @@
+<group name="instance=MOD/prefab/crossbow.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
+	<group name="eye_space">
+		<location name="fp_action" tags="name=fp_action" pos="0.25 -0.4 -0.4" rot="2.5 3.5 0.0"/>
+		<location name="fp_secaction" tags="name=fp_secaction" pos="0.0 -0.4 -0.4" rot="0.0 0.0 0.0"/>
+		<location name="fp_run" tags="name=fp_run" pos="0.1 -0.6 -0.4" rot="20.0 40.0 0.0"/>
+		<location name="tp_action" tags="name=tp_action" pos="0.2 -0.5 -0.3"/>
+		<location name="tp_secaction" tags="name=tp_secaction" pos="0.0 -0.2 -0.4"/>
+		<location name="tp_run" tags="name=tp_run" pos="0.1 -0.6 -0.3" rot="20.4 44.1 -22.5"/>
+		<location name="tp_crouch" tags="name=tp_crouch" pos="0.2 -0.5 -0.3" rot="20.4 64.1 -22.5"/>
+	</group>
+	<group name="tool_space">
+		<body pos="0.02 0.06 -0.08" dynamic="false">
+			<vox pos="0.0 -0.12 0.22" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="stock" scale="0.2"/>
+			<vox pos="0.0 -0.02 -0.16" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="mid" scale="0.2">
+				<vox pos="-0.008 -0.1 0.08" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="grip" scale="0.2"/>
+			</vox>
+			<vox pos="0.0 -0.02 -0.56" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="front" scale="0.2">
+				<vox pos="0.0 -0.06 0.12" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="battery" scale="0.2"/>
+			</vox>
+			<vox pos="-0.02 0.06 -0.48" file="MOD/vox/bolt.vox" scale="0.4"/>
+		</body>
+		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" 			pos="0.0 -0.05 -0.05" rot="0.0 90.0 0.0"/>
+		<location name="tp_secaction_rh" tags="name=tp_secaction_rh ik_hand" 	pos="0.0 -0.05 -0.05" rot="0.0 90.0 0.0"/>
+		<location name="tp_run_rh" tags="name=tp_run_rh ik_hand" 				pos="0.0 -0.05 -0.05" rot="0.0 90.0 0.0"/>
+		<location name="tp_crouch_rh" tags="name=tp_crouch_rh ik_hand" 			pos="0.0 -0.05 -0.05" rot="0.0 90.0 0.0"/>
+		<location name="tp_action_lh" tags="name=tp_action_lh ik_hand" 			pos="0.06 -0.1 -0.34" rot="-90.0 0.0 0.0"/>
+		<location name="tp_run_lh" tags="name=tp_run_lh ik_hand" 				pos="0.06 -0.1 -0.34" rot="-90.0 0.0 0.0"/>
+		<location name="tp_crouch_lh" tags="name=tp_crouch_lh ik_hand" 			pos="0.06 -0.1 -0.34" rot="-90.0 0.0 0.0"/>
+		<location name="muzzle" tags="name=muzzle" pos="0.02 0.14 -0.88" rot="0 0 0"/>
+	</group>
+</group>
+

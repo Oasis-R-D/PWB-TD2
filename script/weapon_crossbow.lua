@@ -23,7 +23,7 @@ local WPNNAME = "Rebar Crossbow"
 local BOLT_IMPACT = "MOD/snd/crossbow_bt_hit.ogg"
 local BOLT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
 
-local BALL_VELOCITY = 63.5 -- game accurate
+local BALL_VELOCITY = 64 -- 63.5 is game accurate, 64 is cooler
 
 -- Per weapon data storer
 M40players = {}
@@ -40,7 +40,9 @@ function createPlayerCLIENTdataM40()
 		scoped = false,
 		timetobolt = nil,
 		playbolt = true,
+		hasBolt = true,
 		dataReset = true,
+		firstDraw = true,
 	}
 end
 
@@ -63,7 +65,7 @@ function createBallSERVERdataCB(p, pos, dir, body)
 end
 
 function server.initM40()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/m40a1.xml", 6)
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/crossbow.xml", 6)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 end
 
@@ -110,7 +112,19 @@ function server.tickM40(dt)
 					-- get mat type BEFORE we break it
 					local matType = GetShapeMaterialAtPosition(shape, data.curPos)
 
-					ShootHook(data.curPos, data.curDir, "bullet", DAMAGE, 0, 10, data.owner, WPNID, WPNNAME)
+					-- See if we should reflect off this surface BEFORE we break it
+					local shouldDel = false
+					local oldDir = data.curDir
+					if matType ~= "glass" then
+						local hitDot = VecDot(normal, VecScale(data.curDir, -1))
+						if hitDot < 0.5 then
+							data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
+						else
+							shouldDel = true
+						end
+					end
+
+					ShootHook(data.curPos, oldDir, "bullet", DAMAGE, 0, 10, data.owner, WPNID, WPNNAME)
 
 					Paint(data.curPos, 0.33, "explosion", 0.75)
 
@@ -135,12 +149,7 @@ function server.tickM40(dt)
 
 						PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
 
-						-- See if we should reflect off this surface
-						local hitDot = VecDot(normal, VecScale(data.curDir, -1))
-						if hitDot < 0.5 then
-							--data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2)) -- TO-DO: only reflect at some angles
-							data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
-						else
+						if shouldDel == true then
 							Delete(data.model)
 							CrossbowBolts[index] = nil -- delete the bolt
 						end
@@ -198,6 +207,17 @@ end
 clipamnt = 0
 local camSineTime = nil
 
+-- stolen from glock, used to hide/show bolt
+function client.suppress(p, suppressed)
+	local toolBody = GetToolBody(p)
+	local shapes = GetBodyShapes(toolBody)
+	if suppressed == false then
+		SetTag(shapes[6], "invisible")
+	else
+		RemoveTag(shapes[6], "invisible")
+	end
+end
+
 function client.tickPlayerM40(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
@@ -209,6 +229,7 @@ function client.tickPlayerM40(p, dt)
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
+		M40players[p].firstDraw = true
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
@@ -226,6 +247,14 @@ function client.tickPlayerM40(p, dt)
 
 	local data = M40players[p]
 
+	-- restore suppresor state visually
+	if data.firstDraw == true then
+		if GetBodyShapes(GetToolBody(p))[6] then -- model isn't drawn first frame, wait until it is
+			client.suppress(p, data.hasBolt)
+			data.firstDraw = false
+		end
+	end
+
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
@@ -240,21 +269,10 @@ function client.tickPlayerM40(p, dt)
 				
 				local playervel = GetPlayerVelocity(p)
 
-				-- muzzleflash
-				for i=0, 3 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.1, 0.15), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(mt.pos, playervel, 0.125)
-				end
+				
+				data.hasBolt = false
+				client.suppress(p, data.hasBolt)
+
 				data.timetobolt = 0.842
 				if ammo-1 > 0 then
 					data.timetobolt = 0.842
@@ -292,8 +310,9 @@ function client.tickPlayerM40(p, dt)
 		data.timetobolt = data.timetobolt - dt
 		if data.timetobolt <= 0 and data.playbolt == true then
 			if ammo > 0 then -- already plays bolt sfx in reload
+				data.hasBolt = true
+				client.suppress(p, data.hasBolt)
 				PlaySound(LoadSound(BOLT_CYCLE), pt.pos)
-				-- TO-DO: make bolt visible again here
 			end
 			data.playbolt = false
 			data.recoil = 0.05

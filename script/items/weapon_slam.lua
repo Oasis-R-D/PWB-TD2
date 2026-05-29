@@ -33,7 +33,7 @@ function createPlayerSERVERdataSLAM()
 end
 
 function server.initSLAM()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/tripmine.xml", 4)
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/slam.xml", 4)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 end
 

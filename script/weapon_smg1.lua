@@ -48,7 +48,7 @@ function createPlayerSERVERdataSMG1()
 end
 
 function server.initSMG1()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/9mmar.xml", 3)
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/smg1.xml", 3)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 end
 

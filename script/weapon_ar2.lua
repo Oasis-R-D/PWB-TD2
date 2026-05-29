@@ -76,7 +76,7 @@ function createBallSERVERdataAR2(p, pos, dir)
 end
 
 function server.initAR2()
-	RegisterTool(WPNID, WPNNAME, "MOD/prefab/m727.xml", 3)
+	RegisterTool(WPNID, WPNNAME, "MOD/prefab/ar2.xml", 3)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 	ballFlyLoop = LoadLoop(BALL_LOOP)
 end
