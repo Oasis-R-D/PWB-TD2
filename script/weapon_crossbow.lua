@@ -23,7 +23,7 @@ local WPNNAME = "Rebar Crossbow"
 local BOLT_IMPACT = "MOD/snd/crossbow_bt_hit.ogg"
 local BOLT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
 
-local BALL_VELOCITY = 64 -- 63.5 is game accurate, 64 is cooler
+local BALL_VELOCITY = 128 -- 63.5 is game accurate, 128 is cooler for MP
 
 -- Per weapon data storer
 M40players = {}
@@ -42,7 +42,7 @@ function createPlayerCLIENTdataM40()
 		playbolt = true,
 		hasBolt = true,
 		dataReset = true,
-		firstDraw = true,
+		shapesNeedsUpd = true,
 	}
 end
 
@@ -83,7 +83,7 @@ function server.tickM40(dt)
 	if #CrossbowBolts == 0 then return end -- no crossbow bolts
 	
 	for index, data in pairs(CrossbowBolts) do
-		if data.totalDist > 500 then
+		if data.totalDist > 1000 then -- make 500 if using HL2 speed
 			Delete(data.model)
 			CrossbowBolts[index] = nil -- delete the bolt
 		else
@@ -98,42 +98,27 @@ function server.tickM40(dt)
 
 			SetBodyTransform(data.model, Transform(data.curPos, QuatLookAt(Vec(), data.curDir)))
 
-			if hit and dist ~= 0 then
-				-- do damage
+			-- damage, vfx
+			if hit then
 				if hitPlayer ~= 0 then
 					PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
 
 					ApplyPlayerDamage(hitPlayer, PLAYERDAMAGE, WPNNAME, data.owner)
-					BloodVFX(VecAdd(data.curPos, VecScale(data.curDir, dist)), data.curDir, PLAYERDAMAGE, hitPlayer)
+					BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, hitPlayer)
 
 					Delete(data.model)
 					CrossbowBolts[index] = nil -- delete the bolt
 				else
-					-- get mat type BEFORE we break it
-					local matType = GetShapeMaterialAtPosition(shape, data.curPos)
+					-- See if we should reflect off this surface
+					local hitDot = VecDot(normal, VecScale(data.curDir, -1))
+					if hitDot < 0.5 then
+						ShootHook(data.curPos, data.curDir, "bullet", DAMAGE/2, 0, 10, data.owner, WPNID, WPNNAME)
+						Paint(data.curPos, 0.16, "explosion", 0.75)
 
-					-- See if we should reflect off this surface BEFORE we break it
-					local shouldDel = false
-					local oldDir = data.curDir
-					if matType ~= "glass" then
-						local hitDot = VecDot(normal, VecScale(data.curDir, -1))
-						if hitDot < 0.5 then
-							data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
-						else
-							shouldDel = true
-						end
-					end
+						data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
 
-					ShootHook(data.curPos, oldDir, "bullet", DAMAGE, 0, 10, data.owner, WPNID, WPNNAME)
-
-					Paint(data.curPos, 0.33, "explosion", 0.75)
-
-					-- spawn fire sometimes
-					server.SpawnFireHook(data.curPos, 50)
-
-					if matType ~= "glass" then
-						-- play sound and VFX here since it spams sounds and VFX otherwise
-
+						PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.25)
+					else
 						-- sparks
 						for i=1,10 do
 							ParticleReset()
@@ -143,13 +128,21 @@ function server.tickM40(dt)
 							ParticleEmissive(5)
 							ParticleStretch(5)
 							ParticleTile(4)
-							ParticleColor(1,0.5,0.5, 1,0.25,0)
+							ParticleColor(1,0.5,0.4, 1,0.25,0)
 							SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
 						end
 
-						PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
+						-- get mat type BEFORE we break it
+						local matType = GetShapeMaterialAtPosition(shape, data.curPos)
 
-						if shouldDel == true then
+						ShootHook(data.curPos, data.curDir, "bullet", DAMAGE, 0, 10, data.owner, WPNID, WPNNAME)
+
+						server.SpawnFireHook(data.curPos, 75)
+						Paint(data.curPos, 0.33, "explosion", 0.75)
+
+						if matType ~= "glass" or HasTag(GetShapeBody(shape), "unbreakable") == true then
+							PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
+
 							Delete(data.model)
 							CrossbowBolts[index] = nil -- delete the bolt
 						end
@@ -231,7 +224,7 @@ function client.tickPlayerM40(p, dt)
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		M40players[p].firstDraw = true
+		M40players[p].shapesNeedsUpd = true
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
@@ -250,10 +243,10 @@ function client.tickPlayerM40(p, dt)
 	local data = M40players[p]
 
 	-- restore suppresor state visually
-	if data.firstDraw == true then
+	if data.shapesNeedsUpd == true then
 		if GetBodyShapes(GetToolBody(p))[6] then -- model isn't drawn first frame, wait until it is
 			client.suppress(p, data.hasBolt)
-			data.firstDraw = false
+			data.shapesNeedsUpd = false
 		end
 	end
 
@@ -261,26 +254,26 @@ function client.tickPlayerM40(p, dt)
 	data.dataReset = false
 
 	if InputDown("usetool", p) and canFire(p, ammo, ammo) and data.hasBolt == true then -- not a good idea to use hasbolt here, only way to prevent THE BUG
-			if data.coolDown < 0 then
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
-				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFireM40", p)
-					camSineTime = 0
-					PlayHaptic(shootHaptic, 1)
-				end
-				
-				local playervel = GetPlayerVelocity(p)
-
-				data.hasBolt = false
-				client.suppress(p, data.hasBolt)
-
-				if ammo-1 > 0 then data.timetobolt = 0.842 end
-
-				data.coolDown = FIRERATE
-				data.altCoolDown = SCOPEFIREDELAY
-
-				data.recoil = RECOIL_AMNT
+		if data.coolDown < 0 then
+			PointLight(mt.pos, 1, 0.7, 0.5, 3)
+			if IsPlayerLocal(p) then
+				ServerCall("server.primaryFireM40", p)
+				camSineTime = 0
+				PlayHaptic(shootHaptic, 1)
 			end
+			
+			local playervel = GetPlayerVelocity(p)
+
+			data.hasBolt = false
+			client.suppress(p, data.hasBolt)
+
+			if ammo-1 > 0 then data.timetobolt = 0.842 end
+
+			data.coolDown = FIRERATE
+			data.altCoolDown = SCOPEFIREDELAY
+
+			data.recoil = RECOIL_AMNT
+		end
 	end
 
 	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then
@@ -308,8 +301,8 @@ function client.tickPlayerM40(p, dt)
 	if data.timetobolt ~= nil then
 		data.timetobolt = data.timetobolt - dt
 		if data.timetobolt <= 0 and data.playbolt == true then
+			data.hasBolt = true -- shouldn't matter since you can't switch out of and back with 0 ammo
 			if ammo > 0 then -- already plays bolt sfx in reload
-				data.hasBolt = true
 				client.suppress(p, data.hasBolt)
 				PlaySound(LoadSound(BOLT_CYCLE), pt.pos)
 			end

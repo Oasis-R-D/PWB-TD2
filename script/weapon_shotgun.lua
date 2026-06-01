@@ -308,7 +308,9 @@ function client.tickPlayerSG(p, dt)
 			data.recoil = 1.5 * RECOIL_AMNT
 		end
 	elseif InputDown("grab", p) and canFire(p, ammo, data.clipamntSG) then -- has enough ammo to primary but not secondary, so fire primary
-		client.primaryFireSG(p)
+		if data.coolDown < 0 then
+			client.primaryFireSG(p)
+		end
 	end
 	
 	-- decrease firing cooldown and recoil
