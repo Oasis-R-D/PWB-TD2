@@ -82,10 +82,12 @@ function server.tickM40(dt)
 
 	if #CrossbowBolts == 0 then return end -- no crossbow bolts
 	
-	for index, data in pairs(CrossbowBolts) do
+	for index = 1, #CrossbowBolts do
+		local data = CrossbowBolts[index]
+
 		if data.totalDist > 1000 then -- make 500 if using HL2 speed
 			Delete(data.model)
-			CrossbowBolts[index] = nil -- delete the bolt
+			table.remove(CrossbowBolts, index)
 		else
 			PointLight(data.curPos, 0.66,0.22,0, 0.2)
 
@@ -107,7 +109,7 @@ function server.tickM40(dt)
 					BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, hitPlayer)
 
 					Delete(data.model)
-					CrossbowBolts[index] = nil -- delete the bolt
+					table.remove(CrossbowBolts, index)
 				else
 					-- See if we should reflect off this surface
 					local hitDot = VecDot(normal, VecScale(data.curDir, -1))
@@ -144,7 +146,7 @@ function server.tickM40(dt)
 							PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
 
 							Delete(data.model)
-							CrossbowBolts[index] = nil -- delete the bolt
+							table.remove(CrossbowBolts, index)
 						end
 					end
 				end
@@ -244,9 +246,15 @@ function client.tickPlayerM40(p, dt)
 
 	-- restore suppresor state visually
 	if data.shapesNeedsUpd == true then
-		if GetBodyShapes(GetToolBody(p))[6] then -- model isn't drawn first frame, wait until it is
-			client.suppress(p, data.hasBolt)
+		local toolBody = GetToolBody(p)
+		if toolBody ~= 0 then
+			local shapes = GetBodyShapes(toolBody)
+			SetTag(shapes[6], "invisible")
+
 			data.shapesNeedsUpd = false
+			data.hasBolt = false
+			client.suppress(p, false)
+			data.timetobolt = 0.842
 		end
 	end
 

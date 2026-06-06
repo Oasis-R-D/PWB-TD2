@@ -123,8 +123,8 @@ end
 function server.secondaryFireSLAM(p) -- detonate satchel placed slams
 	local data = SLAMplayers[p]
 
-	for i, currentBod in pairs(data.satchelBodies) do
-		SetTag(currentBod, "detonate")
+	for i = 1, #data.satchelBodies do
+		SetTag(data.satchelBodies[i], "detonate")
 	end
 
 	data.satchelBodies = {} -- empty active satchels

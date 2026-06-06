@@ -9,6 +9,10 @@ local EXPLSIZE = 1.0
 local THINKTIME = 0.1 -- replicates Half-Life's thinking behavior
 local AIRRESISTMULT = 0.99
 
+function rnd(mi, ma)
+	return math.random(1000)/1000*(ma-mi) + mi
+end
+
 function getBodyCenter(body)
 	local bmi, bma = GetBodyBounds(body)
 	local bc = VecLerp(bmi, bma, 0.5)
@@ -200,10 +204,11 @@ function server.tick(dt)
 			server.shouldExplode = true
 		end
 
-	elseif server.grenStyle == "remote" then -- check if owner has given it the explode tag
+	elseif server.grenStyle == "remote" and server.shouldExplode ~= true then -- check if owner has given it the explode tag
 		if HasTag(grenBody, "detonate") then
 			server.shouldExplode = true
-		elseif (GetPlayerHealth(server.playerThrew) == nil or GetPlayerHealth(server.playerThrew) <= 0.0) and not HasTag(grenBody, "detonate") then
+			server.thinkTime = rnd(0.0, 0.75)
+		elseif (GetPlayerHealth(server.playerThrew) == nil or GetPlayerHealth(server.playerThrew) <= 0.0) then
 			 -- owner died or left, that doesn't matter if it is already exploding though (does weird things if it has the detonate tag here)
 			Delete(grenBody)
 			return

@@ -80,7 +80,7 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 		if pHitPlayer ~= 0 then
 			ApplyPlayerDamage(pHitPlayer, DAMAGE, WPNNAME, m_pPlayer)
 			BloodVFX(SoundPoint, dir, DAMAGE, pHitPlayer)
-		elseif pHitWorld ~= 0 then
+		else
 			ShootHook(SoundPoint, VecScale(pNorm, -1), "bullet", 0.1, 0.1, MAX_RANGE, m_pPlayer, WPNID, WPNNAME, 5) -- push objects, "dent" metal
 			MakeHole(SoundPoint, 0.8, 0.15, 0.1) -- stronger than sledge
 		end
@@ -123,7 +123,8 @@ function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
 		if pHitPlayer ~= 0 then
 			PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), pos, 0.5)
 		end
-		data.recoildelay = 0.1 -- more hit feedback and randomness -- TO-DO: delay this
+		
+		data.recoildelay = 0.1 -- more hit feedback and randomness
 		
 		data.toolAnimator.maxActionPoseTime = 0.05 -- stop midswing
 	end

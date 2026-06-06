@@ -117,7 +117,9 @@ function server.tickAR2(dt)
 
 	if #AR2balls == 0 then return end -- no AR2 balls
 	
-	for index, data in pairs(AR2balls) do
+	for index = 1, #AR2balls do
+		local data = AR2balls[index]
+
 		data.explTimer = data.explTimer - dt
 
 		PointLight(data.curPos, 0,0.35,1, 1)
@@ -149,7 +151,7 @@ function server.tickAR2(dt)
 
 			PlaySound(LoadSound(BALL_DIE), data.curPos, 1)
 			
-			AR2balls[index] = nil -- Delete this AR2 ball
+			table.remove(AR2balls, index)
 		else -- simulate physics
 			QueryRejectBody(GetToolBody(data.owner))
 			QueryInclude("player")

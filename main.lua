@@ -1,9 +1,9 @@
 #version 2
 
 -- EXTERNAL CREDITS:
--- - VALVe (Half-Life: 1)
--- - GearBox Software (Half-Life: Opposing Force)
+-- - VALVe (Half-Life: 2)
 -- - Novena (radial spread code)
+-- - Verbatim Man (AR2 ball and crossbow bolt use code loosely based on his pellet launcher's code)
 
 ----------------------------------------------------------------------------------------------
 
@@ -21,6 +21,24 @@ GLOBAL_9DEGREES = 0.07846
 GLOBAL_10DEGREES = 0.08716
 GLOBAL_15DEGREES = 0.13053
 GLOBAL_20DEGREES = 0.17365
+
+GLOBAL_WEAPONS = {
+   "CRBR",
+   "STNSTK",
+
+   "SMG1",
+   "AR2",
+   "PYTH",
+   "PIST9MM",
+   "SG",
+
+   "M40",
+
+   "FRAG",
+   "SLAM",
+}
+
+GLOBAL_WEAPONS_AMNT = #GLOBAL_WEAPONS -- only calculate this once
 
 ----------------------------------------------------------------------------------------------
 
@@ -43,15 +61,17 @@ GLOBAL_20DEGREES = 0.17365
 #include "script/items/weapon_grenade.lua"
 #include "script/items/weapon_slam.lua"
 
+server.weaponTicks = {}
+client.weaponTicks = {}
 ----------------------------------------------------------------------------------------------
 
 -- this file calls all weapon functions. To add your weapon just add it's functions here (make sure to #include it's lua file).
 
--- to make a mod using this base, choose a weapon below to copy, then copy it's xml, vox and lua file (or you can make new ones completely)
--- in the .LUA file, replace all instances of the weapons name (suffix on the functions, some variables) and then add it's functions here
--- To remove unused/unwanted weapons, remove it's lua file, xml file(s), vox, sounds and then it's function calls and #include from this file
+-- to make a mod using this base, choose a weapon to base your weapon off of, then copy it's xml, vox and lua file (or you can make new ones completely)
+-- in the .LUA file, replace all instances of the weapons name (suffix on the functions, some variables) and then add it's suffix here in the weapons list above
+-- To remove unused/unwanted weapons, remove it's lua file, xml file(s), vox, sounds and then it's name in the weapons list and also its #include from this file
 
--- Weapon order in the HUD is set by the order they are called in the server.init()
+-- Weapon order in the HUD is set by the order they are written in the weapons list
 
 ----------------------------------------------------------------------------------------------
 
@@ -63,88 +83,37 @@ GLOBAL_20DEGREES = 0.17365
 
 -- declare weapons, pickup amounts
 function server.init()
-   -- MELEE (SLOT 1)
-   server.initCRBR()
-   server.initSTNSTK()
+   for i = 1, GLOBAL_WEAPONS_AMNT do
+      server["init" .. GLOBAL_WEAPONS[i]]()
+      table.insert(server.weaponTicks, server["tick" .. GLOBAL_WEAPONS[i]]) 
+   end
 
-   -- SLOT 3
-   server.initSMG1()
-   server.initAR2()
-   server.initPYTH()
-   server.initPIST9MM()
-   server.initSG()
-
-   -- SLOT 6
-   server.initM40()
-
-   -- SPECIALS (SLOT 6)
-
-   -- ITEMS (SLOT 5/NONE)
+   -- only on server!
    server.initMED()
-   server.initFRAG()
-   server.initSLAM()
 end
 
 function server.tick(dt)
-   -- MELEE
-   server.tickCRBR(dt)
-   server.tickSTNSTK(dt)
-
-   server.tickSMG1(dt)
-   server.tickAR2(dt)
-   server.tickM40(dt)
-   server.tickPYTH(dt)
-   server.tickPIST9MM(dt)
-   server.tickSG(dt)
-
-   -- SPECIALS
-
-   -- ITEMS
-   server.tickMED(dt)
-   server.tickFRAG(dt)
-   server.tickSLAM(dt)
+   for i = 1, GLOBAL_WEAPONS_AMNT do
+      server.weaponTicks[i](dt)
+   end
 end
 
--- load haptics 
+-- mostly to load haptics, amongst other things
 function client.init()
-   -- MELEE
-   client.initCRBR()
-   client.initSTNSTK()
-
-   client.initSMG1()
-   client.initAR2()
-   client.initM40()
-   client.initPYTH()
-   client.initPIST9MM()
-   client.initSG()
-
-   -- SPECIALS
-
-   -- ITEMS
-   client.initFRAG()
-   client.initSLAM()
+   for i = 1, GLOBAL_WEAPONS_AMNT do
+      client["init" .. GLOBAL_WEAPONS[i]]()
+      table.insert(client.weaponTicks, client["tick" .. GLOBAL_WEAPONS[i]]) 
+   end
 end
 
 function client.tick(dt)
-   -- MELEE
-   client.tickCRBR(dt)
-   client.tickSTNSTK(dt)
-   
-   client.tickSMG1(dt)
-   client.tickAR2(dt)
-   client.tickM40(dt)
-   client.tickPYTH(dt)
-   client.tickPIST9MM(dt)
-   client.tickSG(dt)
-
-   -- SPECIALS
-
-   -- ITEMS
-   client.tickFRAG(dt)
-   client.tickSLAM(dt)
+   for i = 1, GLOBAL_WEAPONS_AMNT do
+      client.weaponTicks[i](dt)
+   end
 end
 
 -- Draw the magazine amount hud
+-- too lazy to make this automated!!! (also not all weapons need UI)
 function client.draw()
 	if GetPlayerHealth() <= 0 or GetPlayerVehicle() ~= 0 then return end
    
