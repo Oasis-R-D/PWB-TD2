@@ -26,12 +26,12 @@ local BOLT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
 local BALL_VELOCITY = 128 -- 63.5 is game accurate, 128 is cooler for MP
 
 -- Per weapon data storer
-M40players = {}
+CROSSplayers = {}
 
 -- Stores data for all the BOLTS
 CrossbowBolts = {}
 
-function createPlayerCLIENTdataM40()
+function createPlayerCLIENTdataCROSS()
     return {
 		coolDown = 0.0,
 		altCoolDown = 0.0,
@@ -64,12 +64,12 @@ function createBallSERVERdataCB(p, pos, dir, body)
 	}
 end
 
-function server.initM40()
+function server.initCROSS()
 	RegisterTool(WPNID, WPNNAME, "MOD/prefab/crossbow.xml", 6)
 	SetToolAmmoPickupAmount(WPNID, PICKUP_SIZE)
 end
 
-function server.tickM40(dt)
+function server.tickCROSS(dt)
 	for p in PlayersAdded() do
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
@@ -77,7 +77,7 @@ function server.tickM40(dt)
 
 	-- doesn't need server ticking
 	--for p in Players() do
-		--server.tickPlayerM40(p, dt)
+		--server.tickPlayerCROSS(p, dt)
 	--end
 
 	if #CrossbowBolts == 0 then return end -- no crossbow bolts
@@ -155,10 +155,10 @@ function server.tickM40(dt)
 	end
 end
 
-function server.tickPlayerM40(p, dt)
+function server.tickPlayerCROSS(p, dt)
 end
 
-function server.primaryFireM40(p)
+function server.primaryFireCROSS(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	local ammo = GetToolAmmo(WPNID, p)
@@ -181,23 +181,23 @@ function server.primaryFireM40(p)
 	end
 end
 
-function client.initM40()
+function client.initCROSS()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
 	SetToolHaptic(WPNID, toolHaptic);
 end
 
-function client.tickM40(dt)
+function client.tickCROSS(dt)
 	for p in PlayersAdded() do
-		M40players[p] = createPlayerCLIENTdataM40();
+		CROSSplayers[p] = createPlayerCLIENTdataCROSS();
 	end
 
 	for p in PlayersRemoved() do
-		M40players[p] = nil
+		CROSSplayers[p] = nil
 	end
 
 	for p in Players() do
-		client.tickPlayerM40(p, dt)
+		client.tickPlayerCROSS(p, dt)
 	end
 end
 
@@ -215,18 +215,18 @@ function client.suppress(p, suppressed)
 	end
 end
 
-function client.tickPlayerM40(p, dt)
+function client.tickPlayerCROSS(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if M40players[p].dataReset == false then
-			M40players[p] = createPlayerCLIENTdataM40()
+		if CROSSplayers[p].dataReset == false then
+			CROSSplayers[p] = createPlayerCLIENTdataCROSS()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		M40players[p].shapesNeedsUpd = true
+		CROSSplayers[p].shapesNeedsUpd = true
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
@@ -242,20 +242,14 @@ function client.tickPlayerM40(p, dt)
 		return
 	end
 
-	local data = M40players[p]
+	local data = CROSSplayers[p]
 
-	-- restore suppresor state visually
+	-- tell gun to restore bolt state
 	if data.shapesNeedsUpd == true then
-		local toolBody = GetToolBody(p)
-		if toolBody ~= 0 then
-			local shapes = GetBodyShapes(toolBody)
-			SetTag(shapes[6], "invisible")
-
-			data.shapesNeedsUpd = false
-			data.hasBolt = false
-			client.suppress(p, false)
-			data.timetobolt = 0.842
-		end
+		data.shapesNeedsUpd = false
+		data.hasBolt = false
+		data.timetobolt = 0.842
+		data.toolAnimator.timeSinceFire = 0.0
 	end
 
 	-- make data reset when reset conditions are met
@@ -265,7 +259,7 @@ function client.tickPlayerM40(p, dt)
 		if data.coolDown < 0 then
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFireM40", p)
+				ServerCall("server.primaryFireCROSS", p)
 				camSineTime = 0
 				PlayHaptic(shootHaptic, 1)
 			end
@@ -313,6 +307,7 @@ function client.tickPlayerM40(p, dt)
 			if ammo > 0 then -- already plays bolt sfx in reload
 				client.suppress(p, data.hasBolt)
 				PlaySound(LoadSound(BOLT_CYCLE), pt.pos)
+				data.toolAnimator.timeSinceFire = 0.0
 			end
 			data.playbolt = false
 			data.recoil = 0.05

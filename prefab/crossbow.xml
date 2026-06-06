@@ -17,7 +17,7 @@
 			<vox pos="0.0 -0.02 -0.56" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="front" scale="0.2">
 				<vox pos="0.0 -0.06 0.12" texture="12 0.5" blendtexture="3 0.1" file="MOD/vox/crossbow.vox" object="battery" scale="0.2"/>
 			</vox>
-			<vox pos="-0.02 0.06 -0.48" file="MOD/vox/bolt.vox" scale="0.4"/>
+			<vox pos="-0.02 0.06 -0.48" file="MOD/vox/bolt.vox" scale="0.4" tags="invisible"/>
 		</body>
 		<location name="tp_action_rh" tags="name=tp_action_rh ik_hand" 			pos="0.0 -0.05 -0.05" rot="0.0 90.0 0.0"/>
 		<location name="tp_secaction_rh" tags="name=tp_secaction_rh ik_hand" 	pos="0.0 -0.05 -0.05" rot="0.0 90.0 0.0"/>

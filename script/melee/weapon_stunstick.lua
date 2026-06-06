@@ -13,6 +13,7 @@ local MAX_RANGE = 2 -- less range in HL2
 local WPNID = "hl2stunstick"
 local WPNNAME = "Stunstick"
 local COOLDOWN = 0.8
+local CAMMOVETIME = (2 * math.pi) * (0.5 / COOLDOWN) -- Cam movement sine multiplier, COOLDOWN is how long until it's over
 
 -- Per weapon data storer
 STNSTKplayers = {}
@@ -91,24 +92,41 @@ function server.swingSTNSTK(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here fo
 	end
 end
 
+local camSineTime = nil
+local camRecoilY = 0
+local camRecoilX = 0
+
 function client.swingSTNSTK(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
 	local data = STNSTKplayers[m_pPlayer]
 	local vecSrc = GetPlayerEyeTransform(m_pPlayer)
 	data.toolAnimator.timeSinceFire = 0.0
 
+	data.coolDown = COOLDOWN
+
 	if hit == false then
 		-- Miss
 		PlaySound(LoadSound("MOD/snd/stunstick_swing0.ogg"), vecSrc.pos, 0.5)
+
 		data.toolAnimator.maxActionPoseTime = 0.1 -- stop midswing but further in
-		data.coolDown = COOLDOWN
+		if IsPlayerLocal(m_pPlayer) then
+			camSineTime = 0
+			camRecoilX = rnd( -0.125, -0.25)
+			camRecoilY = rnd(  0.125,  0.25)
+		end
 	else
+		if IsPlayerLocal(m_pPlayer) then
+			camSineTime = 0
+			camRecoilX = rnd( 0.5,  1)
+			camRecoilY = rnd( 0.5, 1)
+		end
+
 		if pHitPlayer ~= 0 then
 			PlaySound(LoadSound("MOD/snd/stunstick_fleshhit0.ogg"), pos, 0.5)
 		else
 			PlaySound(LoadSound("MOD/snd/stunstick_impact0.ogg"), pos, 0.5)
 		end
+		
 		data.recoildelay = 0.1 -- more hit feedback and randomness
-		data.coolDown = COOLDOWN
 		
 		data.toolAnimator.maxActionPoseTime = 0.05 -- stop midswing
 	end
@@ -176,6 +194,9 @@ function client.tickPlayerSTNSTK(p, dt)
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
+		if IsPlayerLocal(p) then
+			camSineTime = nil
+		end
 		if STNSTKplayers[p].dataReset == false then
 			STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK()
 		end
@@ -223,5 +244,22 @@ function client.tickPlayerSTNSTK(p, dt)
 	end 
 	-- END RECOIL
 	
+	if IsPlayerLocal(p) then
+		-- CAMERA MOVEMENT
+		if camSineTime ~= nil then
+			local x = camSineTime
+			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be negative)
+			local amp = 80 -- how intense (y at the peak will not equal this though)
+
+			local equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
+
+			if equation >= 0 then
+				local t = Transform(Vec(), QuatAxisAngle(Vec(camRecoilX, camRecoilY, 0), equation))
+				SetPlayerCameraOffsetTransform(t)
+				camSineTime = camSineTime + dt
+			else camSineTime = nil end
+		end
+	end
+
 	tickToolAnimator(data.toolAnimator, dt, nil, p, 6, true)
 end
