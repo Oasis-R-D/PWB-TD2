@@ -74,12 +74,12 @@ function server.primaryFireSG(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	-- first shot is laser accurate
-	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
+	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, 0, p)
 	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 
 	-- rest aren't
 	for i=0, 5 do -- 6
-		pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_10DEGREES, p)
+		pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_10DEGREES, p)
 		ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 	end
 	

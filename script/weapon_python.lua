@@ -75,7 +75,7 @@ function server.primaryFirePYTH(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 	local data = PYTHplayers[p]
 
-	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
+	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, 0, p)
 
 	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1.5)
 

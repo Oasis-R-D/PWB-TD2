@@ -275,7 +275,7 @@ function server.primaryFireAR2(p)
 
 	local data = AR2players[p]
 
-	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_3DEGREES, p)
+	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_3DEGREES, p)
 	
 	local hit, dist = ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 

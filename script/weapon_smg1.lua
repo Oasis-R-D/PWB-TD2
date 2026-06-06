@@ -77,7 +77,7 @@ function server.primaryFireSMG1(p)
 
 	local data = SMG1players[p]
 	
-	local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_5DEGREES, p)
+	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_5DEGREES, p)
 	
 	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 	
