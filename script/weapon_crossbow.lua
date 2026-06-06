@@ -39,7 +39,6 @@ function createPlayerCLIENTdataCROSS()
 		toolAnimator = ToolAnimator(),
 		scoped = false,
 		timetobolt = nil,
-		playbolt = true,
 		hasBolt = true,
 		dataReset = true,
 		shapesNeedsUpd = true,
@@ -91,6 +90,7 @@ function server.tickCROSS(dt)
 		else
 			PointLight(data.curPos, 0.66,0.22,0, 0.2)
 
+			QueryRequire("large visible physical")
 			QueryRejectBody(data.model)
 			local hit, dist, shape, hitPlayer, _, normal = QueryShot(data.curPos, data.curDir, BALL_VELOCITY * dt, 0.0, data.owner)
 
@@ -113,11 +113,12 @@ function server.tickCROSS(dt)
 				else
 					-- See if we should reflect off this surface
 					local hitDot = VecDot(normal, VecScale(data.curDir, -1))
-					if hitDot < 0.5 then
+					if hitDot < 0.5 and dist ~= 0 then
 						ShootHook(data.curPos, data.curDir, "bullet", DAMAGE/2, 0, 10, data.owner, WPNID, WPNNAME)
 						Paint(data.curPos, 0.16, "explosion", 0.75)
 
 						data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
+						data.curPos = VecAdd(data.curPos, VecScale(data.curDir, 0.01))
 
 						PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.25)
 					else
@@ -302,20 +303,16 @@ function client.tickPlayerCROSS(p, dt)
 	
 	if data.timetobolt ~= nil then
 		data.timetobolt = data.timetobolt - dt
-		if data.timetobolt <= 0 and data.playbolt == true then
+		if data.timetobolt <= 0 then
 			data.hasBolt = true -- shouldn't matter since you can't switch out of and back with 0 ammo
 			if ammo > 0 then -- already plays bolt sfx in reload
 				client.suppress(p, data.hasBolt)
 				PlaySound(LoadSound(BOLT_CYCLE), pt.pos)
 				data.toolAnimator.timeSinceFire = 0.0
 			end
-			data.playbolt = false
-			data.recoil = 0.05
-		end
-		if data.timetobolt <= -0.1 then
+
 			data.timetobolt = nil
-			data.playbolt = true
-			data.recoil = 0.025
+			data.recoil = 0.05
 		end
 	end
 	-- END SHELL EJECT
