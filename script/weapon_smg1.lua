@@ -164,120 +164,118 @@ function client.tickPlayerSMG1(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
+	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamntSMG1 < CLIP_SIZE and ammo > 0.5 and data.clipamntSMG1 ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
 		data.inreload = true
-	end
-	
-	if data.coolDown < 0 and data.inreload == true then	
+	-- Finish Reload
+	elseif data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
 		if data.clipamntSMG1 <= 0 then data.m203amntSMG1 = 1 end
 		data.clipamntSMG1 = math.min(CLIP_SIZE, ammo)
-	end
+	-- Check Fire
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntSMG1) then
+		if data.coolDown < 0 then	
+			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 
-	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntSMG1) then
-			if data.coolDown < 0 then	
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
+			local playervel = GetPlayerVelocity(p)
 
-				local playervel = GetPlayerVelocity(p)
+			if IsPlayerLocal(p) then
+				ServerCall("server.primaryFireSMG1", p)
+				camSineTime = 0
+				camRecoilY = rnd(-1, 1)
+				camRecoilX = rnd(-1, 1)
+				data.camAltMove = false
+				PlayHaptic(shootHaptic, 1)
 
-				if IsPlayerLocal(p) then
-					ServerCall("server.primaryFireSMG1", p)
-					camSineTime = 0
-					camRecoilY = rnd(-1, 1)
-					camRecoilX = rnd(-1, 1)
-					data.camAltMove = false
-					PlayHaptic(shootHaptic, 1)
-
-					-- shell ejection
-					local toolBody = GetToolBody(p)
-					local transform = GetBodyTransform(toolBody)
-					local eject_origin = TransformToParentPoint(transform, Vec(CASING_ORG[1],CASING_ORG[2],CASING_ORG[3]))
-					local eject_direction=TransformToParentVec(transform, Vec(1, -0.2, 0))
-					ParticleReset()
-					ParticleGravity(rnd(-2, -8))
-					ParticleRadius(0.02)
-					ParticleAlpha(1)
-					ParticleColor(0.8, 0.6, 0)
-					ParticleTile(6)
-					ParticleDrag(0.125)
-					ParticleSticky(0.5)
-					ParticleCollide(1)
-					SpawnParticle(eject_origin, VecAdd(VecScale(eject_direction,3), playervel), 5)
-				end
-				
-				-- muzzleflash
-				for i=0, 3 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.1, 0.15), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(mt.pos, playervel, 0.125)
-				end
-					
-				data.clipamntSMG1 = data.clipamntSMG1 - 1
-				if data.clipamntSMG1 > 0 then
-					data.coolDown = FIRERATE
-					data.altCoolDown = FIRERATE
-				elseif ammo > 1 then
-					PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
-					data.coolDown = RELOAD_TIME
-					data.altCoolDown = RELOAD_TIME
-					data.inreload = true
-				end
-				
-				data.recoil = RECOIL_AMNT
-			end
-	end
-
-	if InputPressed("grab", p) and canFire(p, data.m203amntSMG1, data.m203amntSMG1) then
-			if data.altCoolDown < 0 then
-				PointLight(mt.pos, 1, 0.7, 0.5, 3)
-				if IsPlayerLocal(p) then
-					ServerCall("server.secondaryFireSMG1", p)
-					camSineTime = 0
-					camRecoilY = 0
-					camRecoilX = 1
-					data.camAltMove = true
-					PlayHaptic(shootHaptic, 1)
-				end
-				
+				-- shell ejection
 				local toolBody = GetToolBody(p)
-				local playervel = GetPlayerVelocity(p)
-				local vectuh = VecAdd(mt.pos, Vec(0, -0.25, 0))
-				
-				-- muzzleflash
-				for i=0, 4 do
-					ParticleReset()
-					ParticleGravity(0)
-					ParticleRadius(rnd(0.1, 0.15), 0.33)
-					ParticleAlpha(1, 0)
-					ParticleTile(5)
-					ParticleDrag(0)
-					ParticleRotation(rnd(10, -10), 0)
-					ParticleSticky(0)
-					ParticleEmissive(5, 1)
-					ParticleCollide(0)
-					ParticleColor(1,0.35,0, 1,0,0)
-					SpawnParticle(vectuh, playervel, 0.125)
-				end
-				
-				data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
-				
-				data.recoil = 1.5 * RECOIL_AMNT
-				
-				data.coolDown = 0.5
-				data.altCoolDown = ALTFIRERATE
-				data.m203amntSMG1 = data.m203amntSMG1 - 1
+				local transform = GetBodyTransform(toolBody)
+				local eject_origin = TransformToParentPoint(transform, Vec(CASING_ORG[1],CASING_ORG[2],CASING_ORG[3]))
+				local eject_direction=TransformToParentVec(transform, Vec(1, -0.2, 0))
+				ParticleReset()
+				ParticleGravity(rnd(-2, -8))
+				ParticleRadius(0.02)
+				ParticleAlpha(1)
+				ParticleColor(0.8, 0.6, 0)
+				ParticleTile(6)
+				ParticleDrag(0.125)
+				ParticleSticky(0.5)
+				ParticleCollide(1)
+				SpawnParticle(eject_origin, VecAdd(VecScale(eject_direction,3), playervel), 5)
 			end
+			
+			-- muzzleflash
+			for i=0, 3 do
+				ParticleReset()
+				ParticleGravity(0)
+				ParticleRadius(rnd(0.1, 0.15), 0.33)
+				ParticleAlpha(1, 0)
+				ParticleTile(5)
+				ParticleDrag(0)
+				ParticleRotation(rnd(10, -10), 0)
+				ParticleSticky(0)
+				ParticleEmissive(5, 1)
+				ParticleCollide(0)
+				ParticleColor(1,0.35,0, 1,0,0)
+				SpawnParticle(mt.pos, playervel, 0.125)
+			end
+				
+			data.clipamntSMG1 = data.clipamntSMG1 - 1
+			if data.clipamntSMG1 > 0 then
+				data.coolDown = FIRERATE
+				data.altCoolDown = FIRERATE
+			elseif ammo > 1 then
+				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+				data.coolDown = RELOAD_TIME
+				data.altCoolDown = RELOAD_TIME
+				data.inreload = true
+			end
+			
+			data.recoil = RECOIL_AMNT
+		end
+	-- Check Altfire
+	elseif InputPressed("grab", p) and canFire(p, data.m203amntSMG1, data.m203amntSMG1) then
+		if data.altCoolDown < 0 then
+			PointLight(mt.pos, 1, 0.7, 0.5, 3)
+			if IsPlayerLocal(p) then
+				ServerCall("server.secondaryFireSMG1", p)
+				camSineTime = 0
+				camRecoilY = 0
+				camRecoilX = 1
+				data.camAltMove = true
+				PlayHaptic(shootHaptic, 1)
+			end
+			
+			local toolBody = GetToolBody(p)
+			local playervel = GetPlayerVelocity(p)
+			local vectuh = VecAdd(mt.pos, Vec(0, -0.25, 0))
+			
+			-- muzzleflash
+			for i=0, 4 do
+				ParticleReset()
+				ParticleGravity(0)
+				ParticleRadius(rnd(0.1, 0.15), 0.33)
+				ParticleAlpha(1, 0)
+				ParticleTile(5)
+				ParticleDrag(0)
+				ParticleRotation(rnd(10, -10), 0)
+				ParticleSticky(0)
+				ParticleEmissive(5, 1)
+				ParticleCollide(0)
+				ParticleColor(1,0.35,0, 1,0,0)
+				SpawnParticle(vectuh, playervel, 0.125)
+			end
+			
+			data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
+			
+			data.recoil = 1.5 * RECOIL_AMNT
+			
+			data.coolDown = 0.5
+			data.altCoolDown = ALTFIRERATE
+			data.m203amntSMG1 = data.m203amntSMG1 - 1
+		end
 	end
 	
 	-- decrease firing cooldown and recoil

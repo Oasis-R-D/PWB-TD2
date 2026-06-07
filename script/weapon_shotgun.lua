@@ -224,6 +224,7 @@ function client.tickPlayerSG(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 	
+	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamntSG < CLIP_SIZE and ammo > 0.5 and data.clipamntSG ~= ammo then
 		local reloadtime = nil
 		local shellsneedingloading = math.min(CLIP_SIZE - data.clipamntSG, ammo)
@@ -240,20 +241,17 @@ function client.tickPlayerSG(p, dt)
 		data.coolDown = reloadtime
 		data.shellinserttime = RELOAD_START_TIME
 		data.inreload = true
-	end
-	
-	if data.inreload == true and data.coolDown < 0 then -- reload the clip
+	-- Finish Reloading
+	elseif data.inreload == true and data.coolDown < 0 then -- reload the clip
 		data.inreload = false
 		data.clipamntSG = math.min(CLIP_SIZE, ammo)
-	end
-				
-	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntSG) then
+	-- Check Fire
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntSG) then
 		if data.coolDown < 0 then				
 			client.primaryFireSG(p)
 		end
-	end
-
-	if InputDown("grab", p) and canFire(p, ammo-1, data.clipamntSG-1) then 
+	-- Check Altfire
+	elseif InputDown("grab", p) and canFire(p, ammo-1, data.clipamntSG-1) then 
 		if data.coolDown < 0 then
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 			if IsPlayerLocal(p) then

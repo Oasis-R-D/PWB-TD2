@@ -151,7 +151,7 @@ function server.tickPlayerCRBR(p, dt)
 
 	data.dataReset = false
 
-	--Check if firing
+	-- Check Fire
 	if InputDown("usetool", p) and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
 			server.swingCRBR(p, dt)
@@ -207,7 +207,7 @@ function client.tickPlayerCRBR(p, dt)
 
 	data.dataReset = false
 
-	--Check if firing
+	-- Check Fire
 	if InputDown("usetool", p) and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
 			data.recoildelay = 0.0 -- make the melee move up a little first

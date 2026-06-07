@@ -166,17 +166,17 @@ function server.primaryFireCROSS(p)
 
 	if ammo <= 0 then return end
 	
-	local pos, dir = getAimVector(mt.pos, MAX_RANGE, 0, p)
+	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, 0, p)
 
-	local GrenTrans = Transform(mt.pos, QuatLookAt(Vec(), dir))
+	local GrenTrans = Transform(Vec(0, -1000, 0))
 	local xml = "MOD/prefab/crossbow_bolt.xml"
 	local boltEnt = Spawn(xml, GrenTrans)
 
 	-- add bolt to sim
-	CrossbowBolts[FindBoltSERVERdataOpening()] = createBallSERVERdataCB(p, mt.pos, dir, boltEnt[1])
+	CrossbowBolts[FindBoltSERVERdataOpening()] = createBallSERVERdataCB(p, pos, dir, boltEnt[1])
 
-	PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
-	PlaySound(LoadSound(PRIM_FIRESOUND2), mt.pos, 10)
+	PlaySound(LoadSound(PRIM_FIRESOUND), pos, 300)
+	PlaySound(LoadSound(PRIM_FIRESOUND2), pos, 10)
 	if ammo < 9999 then
 		SetToolAmmo(WPNID, ammo-1, p)
 	end
@@ -256,6 +256,7 @@ function client.tickPlayerCROSS(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
+	-- Check Fire
 	if InputDown("usetool", p) and canFire(p, ammo, ammo) and data.hasBolt == true then -- not a good idea to use hasbolt here, only way to prevent THE BUG
 		if data.coolDown < 0 then
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
@@ -277,9 +278,8 @@ function client.tickPlayerCROSS(p, dt)
 
 			data.recoil = RECOIL_AMNT
 		end
-	end
-
-	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then
+	-- Check Altfire
+	elseif InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then
 		if data.altCoolDown < 0 then
 			data.altCoolDown = ALTFIRERATE
 			data.scoped = not data.scoped
@@ -340,7 +340,7 @@ function client.tickPlayerCROSS(p, dt)
 		if camSineTime ~= nil then
 			local x = camSineTime
 			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be negative)
-			local amp = 600 -- how intense (y at the peak will not equal this though)
+			local amp = 1000 -- how intense (y at the peak will not equal this though)
 
 			local equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
 

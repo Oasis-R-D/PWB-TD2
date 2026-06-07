@@ -60,26 +60,45 @@ function client.BloodParticles(pos, dir, damage, playerhit)
 		impactsize = 0.3
 	end
 
+	local size = impactsize/5
+	if size > 0.035 then
+		size = 0.035
+	elseif size <= 0.02 then
+		size = 0.02
+	end
+
 	local playervel = GetPlayerVelocity(playerhit)
 
-	for i=0, 3 do
-		ParticleReset()
-		ParticleType("smoke")
-		ParticleRadius(impactsize)
-		ParticleAlpha(10, 0)
-		ParticleColor(0.5, 0.0, 0)
-		ParticleCollide(0)
-		SpawnParticle(pos, playervel, 0.5)
-	end
-	
-	for i=0, (impactsize * 40) do
-		local size = impactsize/5
-		if size > 0.035 then
-			size = 0.035
-		elseif size <= 0.02 then
-			size = 0.02
-		end
+	local blooddir = VecScale(dir, -1)
 
+	local cloudsize = size*10
+
+	local dropsize = damage/3
+	if dropsize > 0.4 then dropsize = 0.4 end
+
+	for i=0, 4 do
+		ParticleReset()
+		ParticleRadius(dropsize)
+		ParticleGravity(rnd(-5, -10))
+		ParticleAlpha(5, 0, "easein") 
+		ParticleTile(5)
+		ParticleStretch(10)
+		ParticleColor(0.33, 0.01, 0)
+		ParticleCollide(0)
+		local direct = VecAdd(blooddir, rndVec(0.25))
+		SpawnParticle(pos, VecAdd(VecScale(direct, rnd(0.8, 3.0)), playervel), 0.75)
+
+		ParticleReset()
+		ParticleRadius(cloudsize, 0.35)
+		ParticleAlpha(5, 0, "easein") 
+		ParticleTile(1)
+		ParticleStretch(10)
+		ParticleColor(0.33, 0.01, 0)
+		ParticleCollide(0)
+		SpawnParticle(pos, VecAdd(VecScale(direct, math.random()*1.5), playervel), 0.75)
+	end
+
+	for i=0, (impactsize * 40) do
 		size = size + rnd(-0.01, 0.005)
 		newPos = VecAdd(pos, rndVec(0.25))
 		ParticleReset()
@@ -108,15 +127,18 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 	elseif damage < 0.25 then
 		noise = 0.35;
 		count = 6;
+	elseif damage > 0.8 then
+		noise = 0.6;
+		count = 18;
 	else
-		noise = 0.45;
+		noise = 0.35;
 		count = 12;
 	end
 
 	for i=0, count do 
 		local newPos = VecAdd(pos, rndVec(0.2))
-
 		local newdir = VecNormalize(VecAdd(VecAdd(dir, rndVec(noise)), VecScale(GetGravity(), 0.025)))
+
 		if ignore ~= nil then QueryRejectBody(ignore) end
 		QueryRejectPlayer(playerhit)
 		local bloodhit, blooddist = QueryRaycast(pos, newdir, 5.5)

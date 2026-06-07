@@ -176,10 +176,12 @@ function client.tickPlayerSLAM(p, dt)
 	
 	data.toolAnimator.maxActionPoseTime = 0.075
 	
+	-- Check Fire
 	if InputDown("usetool", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
 			if IsPlayerLocal(p) then
 				ServerCall("server.primaryFireSLAM", p)
+				PlayHaptic(shootHaptic, 1)
 			end
 
 			data.toolAnimator.timeSinceFire = 0.0
@@ -187,22 +189,18 @@ function client.tickPlayerSLAM(p, dt)
 			data.coolDown = FIRERATE
 			data.recoil = RECOIL_AMNT
 		end
-	end
-
-	if InputPressed("grab", p) and GetPlayerCanUseTool(p) == true  then
-			if data.coolDown < 0 then
-				if IsPlayerLocal(p) then
-					ServerCall("server.secondaryFireSLAM", p)
-				end
-				
-				data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
-
-				data.coolDown = FIRERATE
-				data.recoil = RECOIL_AMNT
+	-- Check Altfire
+	elseif InputPressed("grab", p) and GetPlayerCanUseTool(p) == true  then
+		if data.coolDown < 0 then
+			if IsPlayerLocal(p) then
+				ServerCall("server.secondaryFireSLAM", p)
+				PlayHaptic(shootHaptic, 1)
 			end
+			
+			data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
 
-		if IsPlayerLocal(p) then
-			PlayHaptic(shootHaptic, 1)
+			data.coolDown = FIRERATE
+			data.recoil = RECOIL_AMNT
 		end
 	end
 

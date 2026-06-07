@@ -203,20 +203,19 @@ function client.tickPlayerPIST9MM(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
+	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamntPIST9MM < CLIP_SIZE and ammo > 0.5 and data.clipamntPIST9MM ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		if data.clipamntPIST9MM > 0 then
 			data.NextPrimaryAttack = GetTime() + RELOAD_TIME
 		end
 		data.inreload = true
-	end
-	
-	if data.inreload == true and data.NextPrimaryAttack < GetTime() then	
+	-- Finish Reload
+	elseif data.inreload == true and data.NextPrimaryAttack < GetTime() then	
 		data.inreload = false
 		data.clipamntPIST9MM = math.min(CLIP_SIZE, ammo)
-	end
-
-	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntPIST9MM) then
+	-- Check Fire
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntPIST9MM) then
 		if data.NextPrimaryAttack < GetTime() then
 			StopSound(data.firesound)
 

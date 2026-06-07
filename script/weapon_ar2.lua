@@ -382,20 +382,19 @@ function client.tickPlayerAR2(p, dt)
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
+	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamntAR2 < CLIP_SIZE and ammo > 0.5 and data.clipamntAR2 ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
 		data.altCoolDown = RELOAD_TIME
 		data.inreload = true
-	end
-	
-	if data.coolDown < 0 and data.inreload == true then	
+	-- Finish Reload
+	elseif data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
 		data.AR2altFireAmmo = 1
 		data.clipamntAR2 = math.min(CLIP_SIZE, ammo)
-	end
-
-	if InputDown("usetool", p) and canFire(p, ammo, data.clipamntAR2) then
+	-- Check Fire
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntAR2) then
 		if data.coolDown < 0 then		
 			PointLight(mt.pos, 0.22,0.66,0.9, 3)
 
@@ -435,9 +434,8 @@ function client.tickPlayerAR2(p, dt)
 			
 			data.recoil = RECOIL_AMNT
 		end
-	end
-
-	if InputPressed("grab", p) and canFire(p, data.AR2altFireAmmo, data.AR2altFireAmmo) then
+	-- Check Altfire
+	elseif InputPressed("grab", p) and canFire(p, data.AR2altFireAmmo, data.AR2altFireAmmo) then
 		if data.altCoolDown < 0 then
 			data.coolDown = 1.0
 			data.altCoolDown = 1.5

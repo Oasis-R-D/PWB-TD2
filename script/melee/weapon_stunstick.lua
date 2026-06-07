@@ -153,7 +153,7 @@ function server.tickPlayerSTNSTK(p, dt)
 
 	data.dataReset = false
 
-	--Check if firing
+	-- Check Fire
 	if InputDown("usetool", p) and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
 			server.swingSTNSTK(p, dt)
@@ -209,7 +209,7 @@ function client.tickPlayerSTNSTK(p, dt)
 
 	data.dataReset = false
 
-	--Check if firing
+	-- Check Fire
 	if InputDown("usetool", p) and GetPlayerCanUseTool(p) == true then
 		if data.coolDown < 0 then
 			data.recoildelay = 0.0 -- make the melee move up a little first
