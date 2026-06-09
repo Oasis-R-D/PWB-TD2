@@ -171,7 +171,7 @@ function server.tick(dt)
 			end
 		end
 
-		local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(-0.1, 0.2, 0), GetBodyTransform(grenBody).rot))
+		local laserStartTrans = TransformToParentTransform(GetBodyTransform(grenBody), Transform(Vec(-0.1, 0.2, -0.1), GetBodyTransform(grenBody).rot))
 		local laserStartVec = laserStartTrans.pos
 
 		ParticleReset()

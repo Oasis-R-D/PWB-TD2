@@ -1,11 +1,6 @@
 -- copy this for the most basic melee
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
-
 -- Per weapon constants
 local RECOIL_AMNT = 0.3
 local DAMAGE = 0.2
@@ -16,7 +11,7 @@ local COOLDOWN = 0.8
 local CAMMOVETIME = (2 * math.pi) * (0.5 / COOLDOWN) -- Cam movement sine multiplier, COOLDOWN is how long until it's over
 
 -- Per weapon data storer
-STNSTKplayers = {}
+local playerData = {}
 
 function createPlayerCLIENTdataSTNSTK()
     return {
@@ -43,13 +38,13 @@ end
 
 function server.tickSTNSTK(dt)
 	for p in PlayersAdded() do
-		STNSTKplayers[p] = createPlayerSERVERdataSTNSTK()
+		playerData[p] = createPlayerSERVERdataSTNSTK()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 99999, p)
 	end
 
 	for p in PlayersRemoved() do
-		STNSTKplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -58,7 +53,7 @@ function server.tickSTNSTK(dt)
 end
 
 function server.swingSTNSTK(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for familiarity or whatever)
-	local data = STNSTKplayers[m_pPlayer]
+	local data = playerData[m_pPlayer]
 	
 	local fDidHit = false
 	
@@ -97,7 +92,7 @@ local camRecoilY = 0
 local camRecoilX = 0
 
 function client.swingSTNSTK(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
-	local data = STNSTKplayers[m_pPlayer]
+	local data = playerData[m_pPlayer]
 	local vecSrc = GetPlayerEyeTransform(m_pPlayer)
 	data.toolAnimator.timeSinceFire = 0.0
 
@@ -135,21 +130,21 @@ end
 function server.tickPlayerSTNSTK(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
-	if GetPlayerHealth(p) <= 0 and STNSTKplayers[p].dataReset == false then
-		if STNSTKplayers[p].dataReset == false then
-			STNSTKplayers[p] = createPlayerSERVERdataSTNSTK()
+	if GetPlayerHealth(p) <= 0 and playerData[p].dataReset == false then
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerSERVERdataSTNSTK()
 		end
 		return
 	end
 
-	if GetPlayerTool(p) ~= WPNID and STNSTKplayers[p].dataReset == false then
-		if STNSTKplayers[p].dataReset == false then
-			STNSTKplayers[p] = createPlayerSERVERdataSTNSTK()
+	if GetPlayerTool(p) ~= WPNID and playerData[p].dataReset == false then
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerSERVERdataSTNSTK()
 		end
 		return
 	end
 	
-	local data = STNSTKplayers[p]
+	local data = playerData[p]
 
 	data.dataReset = false
 
@@ -171,11 +166,11 @@ end
 
 function client.tickSTNSTK(dt)
 	for p in PlayersAdded() do
-		STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK();
+		playerData[p] = createPlayerCLIENTdataSTNSTK();
 	end
 
 	for p in PlayersRemoved() do
-		STNSTKplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -187,8 +182,8 @@ function client.tickPlayerSTNSTK(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if STNSTKplayers[p].dataReset == false then
-			STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataSTNSTK()
 		end
 		return
 	end
@@ -197,15 +192,15 @@ function client.tickPlayerSTNSTK(p, dt)
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
-		if STNSTKplayers[p].dataReset == false then
-			STNSTKplayers[p] = createPlayerCLIENTdataSTNSTK()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataSTNSTK()
 		end
 		return
 	end
 
 	local pt = GetPlayerTransform(p)
 
-	local data = STNSTKplayers[p]
+	local data = playerData[p]
 
 	data.dataReset = false
 

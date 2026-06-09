@@ -1,11 +1,6 @@
 -- copy this for the most basic melee
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
-
 -- Per weapon constants
 local RECOIL_AMNT = 0.3
 local DAMAGE = 0.1
@@ -16,7 +11,7 @@ local COOLDOWN = 0.4
 local CAMMOVETIME = (2 * math.pi) * (0.5 / COOLDOWN) -- Cam movement sine multiplier, COOLDOWN is how long until it's over
 
 -- Per weapon data storer
-CRBRplayers = {}
+local playerData = {}
 
 function createPlayerCLIENTdataCRBR()
     return {
@@ -43,13 +38,13 @@ end
 
 function server.tickCRBR(dt)
 	for p in PlayersAdded() do
-		CRBRplayers[p] = createPlayerSERVERdataCRBR()
+		playerData[p] = createPlayerSERVERdataCRBR()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 99999, p)
 	end
 
 	for p in PlayersRemoved() do
-		CRBRplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -58,7 +53,7 @@ function server.tickCRBR(dt)
 end
 
 function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for familiarity or whatever)
-	local data = CRBRplayers[m_pPlayer]
+	local data = playerData[m_pPlayer]
 	
 	local fDidHit = false
 	
@@ -97,7 +92,7 @@ local camRecoilY = 0
 local camRecoilX = 0
 
 function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
-	local data = CRBRplayers[m_pPlayer]
+	local data = playerData[m_pPlayer]
 	local vecSrc = GetPlayerEyeTransform(m_pPlayer)
 	data.toolAnimator.timeSinceFire = 0.0
 
@@ -133,21 +128,21 @@ end
 function server.tickPlayerCRBR(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
-	if GetPlayerHealth(p) <= 0 and CRBRplayers[p].dataReset == false then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerSERVERdataCRBR()
+	if GetPlayerHealth(p) <= 0 and playerData[p].dataReset == false then
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerSERVERdataCRBR()
 		end
 		return
 	end
 
-	if GetPlayerTool(p) ~= WPNID and CRBRplayers[p].dataReset == false then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerSERVERdataCRBR()
+	if GetPlayerTool(p) ~= WPNID and playerData[p].dataReset == false then
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerSERVERdataCRBR()
 		end
 		return
 	end
 	
-	local data = CRBRplayers[p]
+	local data = playerData[p]
 
 	data.dataReset = false
 
@@ -169,11 +164,11 @@ end
 
 function client.tickCRBR(dt)
 	for p in PlayersAdded() do
-		CRBRplayers[p] = createPlayerCLIENTdataCRBR();
+		playerData[p] = createPlayerCLIENTdataCRBR();
 	end
 
 	for p in PlayersRemoved() do
-		CRBRplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -185,8 +180,8 @@ function client.tickPlayerCRBR(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerCLIENTdataCRBR()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataCRBR()
 		end
 		return
 	end
@@ -195,15 +190,15 @@ function client.tickPlayerCRBR(p, dt)
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
-		if CRBRplayers[p].dataReset == false then
-			CRBRplayers[p] = createPlayerCLIENTdataCRBR()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataCRBR()
 		end
 		return
 	end
 
 	local pt = GetPlayerTransform(p)
 
-	local data = CRBRplayers[p]
+	local data = playerData[p]
 
 	data.dataReset = false
 

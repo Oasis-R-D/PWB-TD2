@@ -1,7 +1,6 @@
 -- basic as[h] health pickup for gamemodes
 #version 2
 
-#include "script/include/player.lua"
 
 -- Per weapon constants
 local WPNID = "hlmedkit"

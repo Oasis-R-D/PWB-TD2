@@ -1,10 +1,6 @@
 -- copy this for the most basic mag loaded weapon with alt fire
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
 -- Per weapon constants
 local RELOAD_TIME = 1.5 -- seconds
 local RELOAD_SOUND = "MOD/snd/smg1_reload.ogg"
@@ -22,15 +18,15 @@ local PLAYERDAMAGE = 0.05
 local MAX_RANGE = 100.0
 local WPNID = "hl2smg1"
 local WPNNAME = "Combine SMG"
-local CASING_ORG = Vec(0.02, 0.15, -0.15)	-- casing origin
+local CASING_ORG = Vec(0.02, 0.15, -0.15)
 
 -- Per weapon data storer
-SMG1players = {}
+local playerData = {}
 
 function createPlayerCLIENTdataSMG1()
     return {
-		clipamntSMG1 = CLIP_SIZE,
-		m203amntSMG1 = 1,
+		clipamnt = CLIP_SIZE,
+		m203amnt = 1,
 		inreload = false,
 		coolDown = 0.0,
 		altCoolDown = 0.0,
@@ -54,13 +50,13 @@ end
 
 function server.tickSMG1(dt)
 	for p in PlayersAdded() do
-		SMG1players[p] = createPlayerCLIENTdataSMG1()
+		playerData[p] = createPlayerCLIENTdataSMG1()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
 
 	for p in PlayersRemoved() do
-		SMG1players[p] = nil
+		playerData[p] = nil
 	end
 
 	-- doesn't need server ticking
@@ -75,7 +71,7 @@ end
 function server.primaryFireSMG1(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local data = SMG1players[p]
+	local data = playerData[p]
 	
 	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_5DEGREES, p)
 	
@@ -115,11 +111,11 @@ end
 
 function client.tickSMG1(dt)
 	for p in PlayersAdded() do
-		SMG1players[p] = createPlayerCLIENTdataSMG1();
+		playerData[p] = createPlayerCLIENTdataSMG1();
 	end
 
 	for p in PlayersRemoved() do
-		SMG1players[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -127,8 +123,6 @@ function client.tickSMG1(dt)
 	end
 end
 
-clipamnt = 0
-altclipamnt = 0
 local camSineTime = nil
 local camRecoilY = 0
 local camRecoilX = 0
@@ -137,8 +131,8 @@ function client.tickPlayerSMG1(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if SMG1players[p].dataReset == false then
-			SMG1players[p] = createPlayerCLIENTdataSMG1()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataSMG1()
 		end
 		return
 	end
@@ -159,23 +153,23 @@ function client.tickPlayerSMG1(p, dt)
 		return
 	end
 
-	local data = SMG1players[p]
+	local data = playerData[p]
 
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
 	-- Start Reload
-	if InputPressed("r", p) and data.inreload == false and data.clipamntSMG1 < CLIP_SIZE and ammo > 0.5 and data.clipamntSMG1 ~= ammo then
+	if InputPressed("r", p) and data.inreload == false and data.clipamnt < CLIP_SIZE and ammo > 0.5 and data.clipamnt ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
 		data.inreload = true
 	-- Finish Reload
 	elseif data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
-		if data.clipamntSMG1 <= 0 then data.m203amntSMG1 = 1 end
-		data.clipamntSMG1 = math.min(CLIP_SIZE, ammo)
+		if data.clipamnt <= 0 then data.m203amnt = 1 end
+		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntSMG1) then
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
 		if data.coolDown < 0 then	
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 
@@ -222,8 +216,8 @@ function client.tickPlayerSMG1(p, dt)
 				SpawnParticle(mt.pos, playervel, 0.125)
 			end
 				
-			data.clipamntSMG1 = data.clipamntSMG1 - 1
-			if data.clipamntSMG1 > 0 then
+			data.clipamnt = data.clipamnt - 1
+			if data.clipamnt > 0 then
 				data.coolDown = FIRERATE
 				data.altCoolDown = FIRERATE
 			elseif ammo > 1 then
@@ -236,7 +230,7 @@ function client.tickPlayerSMG1(p, dt)
 			data.recoil = RECOIL_AMNT
 		end
 	-- Check Altfire
-	elseif InputPressed("grab", p) and canFire(p, data.m203amntSMG1, data.m203amntSMG1) then
+	elseif InputPressed("grab", p) and canFire(p, data.m203amnt, data.m203amnt) then
 		if data.altCoolDown < 0 then
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 			if IsPlayerLocal(p) then
@@ -274,7 +268,7 @@ function client.tickPlayerSMG1(p, dt)
 			
 			data.coolDown = 0.5
 			data.altCoolDown = ALTFIRERATE
-			data.m203amntSMG1 = data.m203amntSMG1 - 1
+			data.m203amnt = data.m203amnt - 1
 		end
 	end
 	
@@ -324,27 +318,16 @@ function client.tickPlayerSMG1(p, dt)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end
 		end
-
-		-- UPD AMMO HUD
-		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamntSMG1
-			altclipamnt = data.m203amntSMG1
-		elseif ammo > 0.5 then
-			clipamnt = -8 -- negative 8 means reloading
-			altclipamnt = -8
-		else
-			data.clipamntSMG1 = 0
-			clipamnt = -16
-			altclipamnt = data.m203amntSMG1
-		end
 	end
 end
 
 function client.drawSMG1()
-	if GetPlayerTool() ~= WPNID then -- shouldn't need the player pointer since this runs on client
-		return
-	end
+	if GetPlayerTool() ~= WPNID then return end
 
-	client.drawAmmo(clipamnt, CLIP_SIZE)
-	client.drawSecAmmo(altclipamnt)
+	local p = GetLocalPlayer()
+
+	local ammoToDraw = playerData[p].inreload and -8 or playerData[p].clipamnt
+
+	client.drawAmmo(ammoToDraw, CLIP_SIZE)
+	client.drawSecAmmo(playerData[p].m203amnt)
 end

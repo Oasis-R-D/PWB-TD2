@@ -1,10 +1,6 @@
 -- copy this for a "basic" grenade (this is the weapon, thrown object in items/thrown/throwngren.lua)
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
 -- Per weapon constants
 local PICKUP_SIZE = 5.0
 local RECOIL_AMNT = 0.075
@@ -15,11 +11,12 @@ local WPNNAME = "MK3A2 Frag" -- MK3A2 is a concussion grenade, weapon is called 
 local THROW_SOUND = "MOD/snd/slam_throw.ogg"
 
 -- Per weapon data storer
-FRAGplayers = {}
+local playerData = {}
 
 function createPlayerCLIENTdataFRAG()
 	return {
 		inAttack = false,
+		inAltAttack = false,
 		chargedTime = nil,
 		coolDown = 0.0,
 		recoil = 0.0,
@@ -86,6 +83,51 @@ function server.primaryFireFRAG(p)
 	end
 end
 
+function server.secondaryFireFRAG(p)
+	local mt = GetToolLocationWorldTransform("muzzle", p)
+
+	local ammo = GetToolAmmo(WPNID, p)
+
+	local _,pos,_,angThrow = GetPlayerAimInfo(mt.pos, MAX_RANGE, p)
+	
+	angThrow[2] = 0
+
+	QueryRequire("large visible physical")
+	local hit, dist, normal = QueryRaycast(pos, Vec(0, -1, 0), 0.4064)
+	if hit then
+		local tan = VecCross(angThrow, 	normal)
+		angThrow  = VecCross(normal, 	tan)
+	end
+
+	pos = VecAdd(pos, VecScale(angThrow, 0.4572))
+	local down = TransformToParentVec(mt, Vec(0, -1, 0))
+	pos = VecAdd(pos, VecScale(down, 0.2))
+
+	local throwVel = VecScale(angThrow, 17.78)
+	local velocity = VecAdd(GetPlayerVelocity(p), throwVel)
+
+	local GrenTrans = Transform(pos, QuatLookAt(Vec(), angThrow))
+	GrenTrans.rot = QuatRotateQuat(GrenTrans.rot, QuatEuler(0, 0, -90))
+
+	local xml = "MOD/prefab/gren_frag.xml"
+	grenade_ent = Spawn(xml, GrenTrans)
+
+	SetTag(grenade_ent[2], "grenType", "frag")
+	SetTag(grenade_ent[2], "grenStyle", "timed")
+	SetTag(grenade_ent[2], "timer", FUZESTART)
+	SetTag(grenade_ent[2], "playerThrew", p)
+
+	SetBodyVelocity(grenade_ent[2], velocity)
+
+	SetBodyAngularVelocity(grenade_ent[2], TransformToParentVec(GrenTrans, Vec(0,18.288,0)))
+
+	PlaySound(LoadSound(THROW_SOUND), mt.pos, 0.7)
+	
+	if ammo < 9999 then
+		SetToolAmmo(WPNID, ammo-1, p)
+	end
+end
+
 function client.initFRAG()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
@@ -94,11 +136,11 @@ end
 
 function client.tickFRAG(dt)
 	for p in PlayersAdded() do
-		FRAGplayers[p] = createPlayerCLIENTdataFRAG();
+		playerData[p] = createPlayerCLIENTdataFRAG();
 	end
 
 	for p in PlayersRemoved() do
-		FRAGplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -110,22 +152,22 @@ function client.tickPlayerFRAG(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if FRAGplayers[p].dataReset == false then
-			FRAGplayers[p] = createPlayerCLIENTdataFRAG()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataFRAG()
 		end
 		return
 	end
 	
 	if GetPlayerTool(p) ~= WPNID then
-		if FRAGplayers[p].dataReset == false then
-			FRAGplayers[p] = createPlayerCLIENTdataFRAG()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataFRAG()
 		end
 		return
 	end
 
 	local ammo = GetToolAmmo(WPNID, p)
 	
-	local data = FRAGplayers[p]
+	local data = playerData[p]
 
 	-- make data reset when reset conditions are met
 	data.dataReset = false
@@ -139,6 +181,13 @@ function client.tickPlayerFRAG(p, dt)
 		end
 	end
 
+	if InputDown("grab", p) and ammo > 0.5 and GetPlayerCanUseTool(p) == true and data.inAttack == false then
+		if data.coolDown < 0 then
+			data.inAttack = true
+			data.inAltAttack = true
+		end
+	end
+
 	if data.chargedTime ~= nil and data.inAttack == true then -- deplete timer and check if ready
 		data.chargedTime = data.chargedTime + dt -- cook the grenade
 
@@ -148,14 +197,17 @@ function client.tickPlayerFRAG(p, dt)
 		end
 		pitch = pitch / 100
 
-		if data.recoil < 0 then data.recoil = 0 end
 		data.recoil = math.min(0.025, data.recoil + (pitch * 0.01))
 
-		if (data.chargedTime > 0.5 and not InputDown("usetool", p)) then -- swing start animation done (in opfor)
+		if (data.chargedTime > 0.25 and not InputDown("usetool", p)) then -- swing start animation done (in opfor)
 			data.toolAnimator.forceSecondaryActionPose = false
 
 			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFireFRAG", p)
+				if data.inAltAttack == false then
+					ServerCall("server.primaryFireFRAG", p)
+				else
+					ServerCall("server.secondaryFireFRAG", p)
+				end
 				PlayHaptic(shootHaptic, 1)
 			end
 
@@ -164,6 +216,7 @@ function client.tickPlayerFRAG(p, dt)
 			data.recoil = RECOIL_AMNT
 			data.chargedTime = nil
 			data.inAttack = false
+			data.inAltAttack = false
 		end
 	elseif data.inAttack == true then -- start timer
 		data.chargedTime = 0

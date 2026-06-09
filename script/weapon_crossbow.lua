@@ -1,10 +1,6 @@
 -- copy this for the most basic scoped mag loaded weapon with slower empty reloads (INCLUDES SCOPE)
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
 -- Per weapon constants
 local PRIM_FIRESOUND = "MOD/snd/crossbow_fire.ogg"
 local PRIM_FIRESOUND2 = "MOD/snd/crossbow_fire2.ogg"
@@ -26,7 +22,7 @@ local BOLT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
 local BALL_VELOCITY = 128 -- 63.5 is game accurate, 128 is cooler for MP
 
 -- Per weapon data storer
-CROSSplayers = {}
+local playerData = {}
 
 -- Stores data for all the BOLTS
 CrossbowBolts = {}
@@ -190,11 +186,11 @@ end
 
 function client.tickCROSS(dt)
 	for p in PlayersAdded() do
-		CROSSplayers[p] = createPlayerCLIENTdataCROSS();
+		playerData[p] = createPlayerCLIENTdataCROSS();
 	end
 
 	for p in PlayersRemoved() do
-		CROSSplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -220,14 +216,14 @@ function client.tickPlayerCROSS(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if CROSSplayers[p].dataReset == false then
-			CROSSplayers[p] = createPlayerCLIENTdataCROSS()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataCROSS()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		CROSSplayers[p].shapesNeedsUpd = true
+		playerData[p].shapesNeedsUpd = true
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
@@ -243,7 +239,7 @@ function client.tickPlayerCROSS(p, dt)
 		return
 	end
 
-	local data = CROSSplayers[p]
+	local data = playerData[p]
 
 	-- tell gun to restore bolt state
 	if data.shapesNeedsUpd == true then

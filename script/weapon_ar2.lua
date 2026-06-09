@@ -1,9 +1,4 @@
--- just copy the Mp5 instead (also this has modified recoil to make the arm dislocation less noticeable)
 #version 2
-
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
 
 -- Per weapon constants
 local RELOAD_TIME = 1.5 -- seconds
@@ -31,14 +26,14 @@ local BALL_LOOP = "MOD/snd/ar2_ball_fly.ogg"
 local BALL_VELOCITY = 30
 
 -- Per weapon data storer
-AR2players = {}
+local playerData = {}
 
 -- Stores data for all the BALLS
 AR2balls = {}
 
 function createPlayerCLIENTdataAR2()
     return {
-		clipamntAR2 = CLIP_SIZE,
+		clipamnt = CLIP_SIZE,
 		AR2altFireAmmo = 1,
 		inAltAttack = false,
 		chargedTime = nil,
@@ -101,13 +96,13 @@ end
 
 function server.tickAR2(dt)
 	for p in PlayersAdded() do
-		AR2players[p] = createPlayerSERVERdataAR2()
+		playerData[p] = createPlayerSERVERdataAR2()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
 
 	for p in PlayersRemoved() do
-		AR2players[p] = nil
+		playerData[p] = nil
 	end
 
 	-- doesn't need server ticking
@@ -273,7 +268,7 @@ end
 function server.primaryFireAR2(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
-	local data = AR2players[p]
+	local data = playerData[p]
 
 	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_3DEGREES, p)
 	
@@ -330,11 +325,11 @@ end
 
 function client.tickAR2(dt)
 	for p in PlayersAdded() do
-		AR2players[p] = createPlayerCLIENTdataAR2();
+		playerData[p] = createPlayerCLIENTdataAR2();
 	end
 
 	for p in PlayersRemoved() do
-		AR2players[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -342,8 +337,6 @@ function client.tickAR2(dt)
 	end
 end
 
-clipamnt = 0
-altclipamnt = 0
 local camSineTime = nil
 
 function getFullChargeTime()
@@ -354,14 +347,14 @@ function client.tickPlayerAR2(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if AR2players[p].dataReset == false then
-			AR2players[p] = createPlayerCLIENTdataAR2()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataAR2()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		AR2players[p].chargedTime = nil
+		playerData[p].chargedTime = nil
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
@@ -377,13 +370,13 @@ function client.tickPlayerAR2(p, dt)
 		return
 	end
 	
-	local data = AR2players[p]
+	local data = playerData[p]
 	
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 
 	-- Start Reload
-	if InputPressed("r", p) and data.inreload == false and data.clipamntAR2 < CLIP_SIZE and ammo > 0.5 and data.clipamntAR2 ~= ammo then
+	if InputPressed("r", p) and data.inreload == false and data.clipamnt < CLIP_SIZE and ammo > 0.5 and data.clipamnt ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
 		data.coolDown = RELOAD_TIME
 		data.altCoolDown = RELOAD_TIME
@@ -392,9 +385,9 @@ function client.tickPlayerAR2(p, dt)
 	elseif data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
 		data.AR2altFireAmmo = 1
-		data.clipamntAR2 = math.min(CLIP_SIZE, ammo)
+		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntAR2) then
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
 		if data.coolDown < 0 then		
 			PointLight(mt.pos, 0.22,0.66,0.9, 3)
 
@@ -423,8 +416,8 @@ function client.tickPlayerAR2(p, dt)
 				SpawnParticle(mt.pos, playervel, 0.125)
 			end
 			
-			data.clipamntAR2 = data.clipamntAR2 - 1
-			if data.clipamntAR2 > 0 then
+			data.clipamnt = data.clipamnt - 1
+			if data.clipamnt > 0 then
 				data.coolDown = FIRERATE
 			elseif ammo > 1 then
 				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
@@ -541,27 +534,16 @@ function client.tickPlayerAR2(p, dt)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end
 		end
-
-		-- UPD AMMO HUD
-		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamntAR2
-			altclipamnt = data.AR2altFireAmmo
-		elseif ammo > 0.5 then
-			clipamnt = -8 -- negative 8 means reloading
-			altclipamnt = -8
-		else
-			data.clipamntAR2 = 0
-			clipamnt = -16
-			altclipamnt = data.AR2altFireAmmo
-		end
 	end
 end
 
 function client.drawAR2()
-	if GetPlayerTool() ~= WPNID then -- shouldn't need the player pointer since this runs on client
-		return
-	end
+	if GetPlayerTool() ~= WPNID then return end
 
-	client.drawAmmo(clipamnt, CLIP_SIZE)
-	client.drawSecAmmo(altclipamnt)
+	local p = GetLocalPlayer()
+
+	local ammoToDraw = playerData[p].inreload and -8 or playerData[p].clipamnt
+
+	client.drawAmmo(ammoToDraw, CLIP_SIZE)
+	client.drawSecAmmo(playerData[p].AR2altFireAmmo)
 end

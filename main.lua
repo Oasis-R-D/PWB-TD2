@@ -42,6 +42,12 @@ GLOBAL_WEAPONS_AMNT = #GLOBAL_WEAPONS -- only calculate this once
 
 ----------------------------------------------------------------------------------------------
 
+-- GLOBALS
+#include "script/include/player.lua"
+#include "script/pwbtoolanimation.lua"
+#include "script/util.lua"
+
+-- WEAPONS
 #include "script/weapon_smg1.lua"
 #include "script/weapon_ar2.lua"
 #include "script/weapon_shotgun.lua"
@@ -77,8 +83,6 @@ client.weaponTicks = {}
 
 -- TO-DO: 
 -- - redo 357 model?
--- - grenade rolling
--- - should prob add crowbar viewpunch to stunstick
 
 ----------------------------------------------------------------------------------------------
 

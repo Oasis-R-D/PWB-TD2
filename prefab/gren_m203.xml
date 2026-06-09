@@ -1,7 +1,7 @@
 <group name="instance=MOD/prefab/gren_m203.xml" pos="0.0 0.0 0.0" rot="0.0 0.0 0.0">
 	<script file="MOD/script/items/genericgrenade.lua">
 		<body tags="hlgrenade" dynamic="true">
-			<vox tags="invisible unbreakable nomerge" file="MOD/vox/HITBOX.vox" scale="1.0">
+			<vox tags="invisible unbreakable nomerge" density="1000.0" file="MOD/vox/HITBOX.vox" scale="1.0">
 				<vox tags="nomerge" pos="-0.05 0.11 -0.12" rot="0.0 0.0 0.0" texture="17 0.7" blendtexture="4 0.2" collide="false" file="MOD/vox/grenade.vox" scale="0.2"/>
 			</vox>
 		</body>

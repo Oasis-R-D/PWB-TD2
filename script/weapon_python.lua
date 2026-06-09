@@ -1,11 +1,6 @@
 -- copy this for the most basic revolver
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
-
 -- Per weapon constants
 local RELOAD_TIME = 3.6666 -- seconds
 local RELOAD_SOUND = "MOD/snd/357R.ogg"
@@ -25,11 +20,11 @@ local CASING_ORG = Vec(-0.1, 0.25, 0.15)
 local ADSFOV = 40
 
 -- Per weapon data storer
-PYTHplayers = {}
+local playerData = {}
 
 function createPlayerCLIENTdataPYTH()
     return {
-		clipamntPYTH = CLIP_SIZE,
+		clipamnt = CLIP_SIZE,
 		inreload = false,
 		coolDown = 0.0,
 		altCoolDown = 0.0,
@@ -54,13 +49,13 @@ end
 
 function server.tickPYTH(dt)
 	for p in PlayersAdded() do
-		PYTHplayers[p] = createPlayerSERVERdataPYTH()
+		playerData[p] = createPlayerSERVERdataPYTH()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
 
 	for p in PlayersRemoved() do
-		PYTHplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	--for p in Players() do
@@ -73,7 +68,7 @@ end
 
 function server.primaryFirePYTH(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-	local data = PYTHplayers[p]
+	local data = playerData[p]
 
 	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, 0, p)
 
@@ -93,11 +88,11 @@ end
 
 function client.tickPYTH(dt)
 	for p in PlayersAdded() do
-		PYTHplayers[p] = createPlayerCLIENTdataPYTH();
+		playerData[p] = createPlayerCLIENTdataPYTH();
 	end
 
 	for p in PlayersRemoved() do
-		PYTHplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -105,15 +100,14 @@ function client.tickPYTH(dt)
 	end
 end
 
-clipamnt = 0
 local camSineTime = nil
 
 function client.tickPlayerPYTH(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if PYTHplayers[p].dataReset == false then
-			PYTHplayers[p] = createPlayerCLIENTdataPYTH()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataPYTH()
 		end
 		return
 	end
@@ -134,15 +128,15 @@ function client.tickPlayerPYTH(p, dt)
 		return
 	end
 
-	local data = PYTHplayers[p]
+	local data = playerData[p]
 
 	-- make data reset when reset conditions are met
 	data.dataReset = false
 	
 	-- Start Reload
-	if InputPressed("r", p) and data.inreload == false and data.clipamntPYTH < CLIP_SIZE and ammo > 0.5 and data.clipamntPYTH ~= ammo then
+	if InputPressed("r", p) and data.inreload == false and data.clipamnt < CLIP_SIZE and ammo > 0.5 and data.clipamnt ~= ammo then
 		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
-		if data.clipamntPYTH > 0 then
+		if data.clipamnt > 0 then
 			data.coolDown = RELOAD_TIME
 			data.timeuntileject = 1.35
 		end
@@ -150,9 +144,9 @@ function client.tickPlayerPYTH(p, dt)
 	-- Finish Reload
 	elseif data.coolDown < 0 and data.inreload == true then	
 		data.inreload = false
-		data.clipamntPYTH = math.min(CLIP_SIZE, ammo)
+		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamntPYTH) then
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
 		if data.coolDown < 0 then	
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 			if IsPlayerLocal(p) then
@@ -179,8 +173,8 @@ function client.tickPlayerPYTH(p, dt)
 				SpawnParticle(mt.pos, playervel, 0.125)
 			end
 				
-			data.clipamntPYTH = data.clipamntPYTH - 1
-			if data.clipamntPYTH > 0 then
+			data.clipamnt = data.clipamnt - 1
+			if data.clipamnt > 0 then
 				data.coolDown = FIRERATE
 			elseif ammo > 1 then
 				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
@@ -202,7 +196,7 @@ function client.tickPlayerPYTH(p, dt)
 		end
 	end
 
-	if data.scoped == false or data.clipamntPYTH < 0 or ammo <= 0 then
+	if data.scoped == false or data.clipamnt < 0 or ammo <= 0 then
 		data.toolAnimator.forceSecondaryActionPose = false
 	elseif data.scoped == true then
 		data.toolAnimator.timeSinceFire = 1.5 -- make unscoping take ~0.5
@@ -254,16 +248,6 @@ function client.tickPlayerPYTH(p, dt)
 			else camSineTime = nil end
 		end
 
-		-- UPD AMMO HUD
-		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamntPYTH
-		elseif ammo > 0.5 then
-			clipamnt = -8 -- negative 8 means reloading
-		else
-			data.clipamntM727 = 0
-			clipamnt = -16
-		end
-
 		-- SHELL EJECT
 		if data.timeuntileject ~= nil then
 			data.timeuntileject = data.timeuntileject - dt
@@ -296,9 +280,11 @@ function client.tickPlayerPYTH(p, dt)
 end
 
 function client.drawPYTH()
-	if GetPlayerTool() ~= WPNID then -- shouldn't need the player pointer since this runs on client
-		return
-	end
+	if GetPlayerTool() ~= WPNID then return end
 
-	client.drawAmmo(clipamnt, CLIP_SIZE)
+	local p = GetLocalPlayer()
+
+	local ammoToDraw = playerData[p].inreload and -8 or playerData[p].clipamnt
+
+	client.drawAmmo(ammoToDraw, CLIP_SIZE)
 end

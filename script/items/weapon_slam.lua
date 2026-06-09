@@ -1,10 +1,6 @@
 -- copy this for a "basic" grenade (this is the weapon, thrown object in items/thrown/throwngren.lua)
 #version 2
 
-#include "script/include/player.lua"
-#include "script/pwbtoolanimation.lua"
-#include "script/util.lua"
-
 -- Per weapon constants
 local PICKUP_SIZE = 3.0
 local RECOIL_AMNT = 0.075
@@ -13,8 +9,9 @@ local WPNID = "hl2slam"
 local WPNNAME = "S.L.A.M"
 local THROW_SOUND = "MOD/snd/slam_throw.ogg"
 local PLACE_SOUND = "MOD/snd/slam_place.ogg"
+
 -- Per weapon data storer
-SLAMplayers = {}
+local playerData = {}
 
 function createPlayerCLIENTdataSLAM()
 	return {
@@ -39,13 +36,13 @@ end
 
 function server.tickSLAM(dt)
 	for p in PlayersAdded() do
-		SLAMplayers[p] = createPlayerSERVERdataSLAM()
+		playerData[p] = createPlayerSERVERdataSLAM()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 5, p)
 	end
 
 	for p in PlayersRemoved() do
-		SLAMplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -57,14 +54,14 @@ function server.tickPlayerSLAM(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if SLAMplayers[p].dataReset == false then
-			SLAMplayers[p] = createPlayerSERVERdataSLAM()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerSERVERdataSLAM()
 		end
 		return
 	end
 
 	-- make data reset when reset conditions are met
-	SLAMplayers[p].dataReset = false
+	playerData[p].dataReset = false
 	
 	local ammo = GetToolAmmo(WPNID, p)
 	if ammo < 9999 and ammo > 5 then
@@ -91,7 +88,7 @@ function server.primaryFireSLAM(p)
 		PlaySound(LoadSound(PLACE_SOUND), GrenTrans.pos, 0.7)
 	else -- throw as satchel
 		local mt = GetToolLocationWorldTransform("muzzle", p)
-		local data = SLAMplayers[p]
+		local data = playerData[p]
 
 		_,pos,_,angThrow = GetPlayerAimInfo(mt.pos, MAX_RANGE, p)
 
@@ -121,7 +118,7 @@ function server.primaryFireSLAM(p)
 end
 
 function server.secondaryFireSLAM(p) -- detonate satchel placed slams
-	local data = SLAMplayers[p]
+	local data = playerData[p]
 
 	for i = 1, #data.satchelBodies do
 		SetTag(data.satchelBodies[i], "detonate")
@@ -138,11 +135,11 @@ end
 
 function client.tickSLAM(dt)
 	for p in PlayersAdded() do
-		SLAMplayers[p] = createPlayerCLIENTdataSLAM();
+		playerData[p] = createPlayerCLIENTdataSLAM();
 	end
 
 	for p in PlayersRemoved() do
-		SLAMplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -154,22 +151,22 @@ function client.tickPlayerSLAM(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
-		if SLAMplayers[p].dataReset == false then
-			SLAMplayers[p] = createPlayerCLIENTdataSLAM()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataSLAM()
 		end
 		return
 	end
 	
 	if GetPlayerTool(p) ~= WPNID then
-		if SLAMplayers[p].dataReset == false then
-			SLAMplayers[p] = createPlayerCLIENTdataSLAM()
+		if playerData[p].dataReset == false then
+			playerData[p] = createPlayerCLIENTdataSLAM()
 		end
 		return
 	end
 
 	local ammo = GetToolAmmo(WPNID, p)
 	
-	local data = SLAMplayers[p]
+	local data = playerData[p]
 
 	-- make data reset when reset conditions are met
 	data.dataReset = false
