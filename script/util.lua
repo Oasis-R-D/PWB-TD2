@@ -193,9 +193,10 @@ function getAimVector(pos, range, spreadRad, p, spreadRadVert)
 end
 
 -- hook the Shoot func to add new stuff
-function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, impulseMult)
+function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, impulseMult, radius)
 	impulseMult = impulseMult or 1
 	playerdamage = playerdamage or 0
+	radius = radius or 0
 
 	-- destroy ropes (only runs once!!)
 	local ropeHit, ropeDist, ropeJoint = QueryRaycastRope(pos, dir, range)
@@ -206,6 +207,19 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 	
 	-- figure out whether we need to run player or world hit code
 	local bHit, pdist, pShape, playerhit = QueryShot(pos, dir, range, 0, player)
+
+	if radius > 0 then
+		QueryRequire("player")
+		HULLbHit, HULLpdist, HULLpShape, HULLplayerhit, _, normal = QueryShot(pos, dir, range, radius, player)
+
+		if HULLplayerhit ~= 0 then
+			local hitPoint = VecAdd(pos, VecAdd(VecScale(dir, HULLpdist), VecScale(normal, -radius)))
+			pdist = HULLpdist
+			dir = VecNormalize(VecSub(hitPoint, pos))
+			playerhit = HULLplayerhit
+			bHit = true
+		end
+	end
 
 	-- knock back objects some more
 	if bHit then
