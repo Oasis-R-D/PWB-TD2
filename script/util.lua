@@ -131,26 +131,33 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 		count = 12;
 	end
 
+	-- Impact for animators
+	PaintRGBA(pos, rnd(0.166, 0.3), rnd(0.2, 0.3), 0.0, 0.0, 1.0, 0.9)
+
 	for i=0, count do 
 		local newPos = VecAdd(pos, rndVec(0.2))
 		local newdir = VecNormalize(VecAdd(VecAdd(dir, rndVec(noise)), VecScale(GetGravity(), 0.025)))
 
-		if ignore ~= nil then QueryRejectBody(ignore) end
-		QueryRejectPlayer(playerhit)
+		if ignore ~= nil then QueryRejectAnimator(ignore) end
 		local bloodhit, blooddist = QueryRaycast(pos, newdir, 5.5)
 
-		if bloodhit ~= 0 then
-			PaintRGBA(VecAdd(pos, VecScale(newdir, blooddist)), rnd(0.166, 0.3), rnd(0.166, 0.2), 0.0, 0.0, 1.0, rnd(0.75, 1.0))
+		if bloodhit ~= 0 and blooddist > 0.33 then
+			local splatDist = blooddist
+			if splatDist > 1 then splatDist = 1 end
+			local chance = rnd(0.75, 1.0) * 1/splatDist * splatDist / 2
+			PaintRGBA(VecAdd(pos, VecScale(newdir, blooddist)), rnd(0.166, 0.3), rnd(0.166, 0.2), 0.0, 0.0, 1.0, chance)
 		end
 	end
 	
 	local newestdir = VecNormalize(VecAdd(dir, VecScale(GetGravity(), 0.025)))
-	if ignore ~= nil then QueryRejectBody(ignore) end
-	QueryRejectPlayer(playerhit)
+	if ignore ~= nil then QueryRejectAnimator(ignore) end
 	local bigbloodhit, bigblooddist = QueryRaycast(pos, newestdir, 4)
 
 	if bigbloodhit ~= 0 then
-		PaintRGBA(VecAdd(pos, VecScale(dir, bigblooddist)), 0.5, rnd(0.166, 0.2), 0.0, 0.0, 1.0, 1.0)
+		local splatDist = bigblooddist
+		if splatDist > 1 then splatDist = 1 end
+		local chance = splatDist/1
+		PaintRGBA(VecAdd(pos, VecScale(dir, bigblooddist)), 0.5, rnd(0.166, 0.2), 0.0, 0.0, 1.0, chance)
 	end
 end
 
@@ -205,7 +212,9 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 		ApplyBodyImpulse(GetShapeBody(pShape), VecAdd(pos, VecScale(dir, pdist)), VecScale(dir, 800 * impulseMult))
 	end
 
-	if playerhit == 0 and GetBodyAnimator(GetShapeBody(pShape)) == 0 then
+	local hitAnimator = GetBodyAnimator(GetShapeBody(pShape))
+
+	if playerhit == 0 and hitAnimator == 0 then
 		-- use normal shooting for world
 		Shoot(pos, dir, shoottype, damage, range, player, weaponid)
 	elseif playerdamage > 0 then
@@ -232,13 +241,16 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 
 			-- Deal damage
 			ApplyPlayerDamage(playerhit, playerdamage, weaponname, player)
-		end
 
-		-- Blood VFX
-		BloodVFX(SoundPoint, dir, playerdamage, playerhit)
+			-- Blood VFX
+			BloodVFX(SoundPoint, dir, playerdamage, playerhit)
+		else
+			-- Blood VFX
+			BloodVFX(SoundPoint, dir, playerdamage, nil, hitAnimator)
+		end
 	end
 
-	return bHit, pdist, playerhit,
+	return bHit, pdist, playerhit
 end
 
 function server.SpawnFireHook(pos, chance)
