@@ -205,7 +205,7 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 		ApplyBodyImpulse(GetShapeBody(pShape), VecAdd(pos, VecScale(dir, pdist)), VecScale(dir, 800 * impulseMult))
 	end
 
-	if playerhit == 0 then
+	if playerhit == 0 and GetBodyAnimator(GetShapeBody(pShape)) == 0 then
 		-- use normal shooting for world
 		Shoot(pos, dir, shoottype, damage, range, player, weaponid)
 	elseif playerdamage > 0 then
@@ -214,28 +214,31 @@ function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, wea
 		PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), SoundPoint, 2)
 
 		-- don't actually hit the player so we can do our own damage and vfx
-		local newrange = pdist - 0.125
-		if newrange > 0 then Shoot(pos, dir, shoottype, damage, newrange, player, weaponid) end
+		local newrange = pdist - 0.5
+		if newrange > 0 then Shoot(pos, dir, shoottype, 0.0, newrange, player, weaponid) end
 
-		-- check what bodypart was hit
-		QueryRequire("player")
-		QueryInclude("player")
-		local _, _, _, bodyPart = QueryRaycast(pos, dir, range + 0.125, 0.1)
+		if playerhit ~= 0 then
+			-- apply hitgroups
+			QueryRequire("player")
+			QueryInclude("player")
+			QueryRejectPlayer(player)
+			local _, _, _, bodyPart = QueryRaycast(pos, dir, pdist + 0.25)
 
-		-- per bodypart damage
-		local hitPart = GetTagValue(GetShapeBody(bodyPart), "bone")
-		if hitPart == "head" then
-			playerdamage = playerdamage * GLOBAL_HEADSHOTMULT
-		elseif hitPart == "neck" then
-			playerdamage = playerdamage * (GLOBAL_HEADSHOTMULT/2)
+			
+			local hitPart = GetTagValue(GetShapeBody(bodyPart), "bone")
+			if hitPart == "head" or hitPart == "neck" then
+				playerdamage = playerdamage * GLOBAL_HEADSHOTMULT
+			end
+
+			-- Deal damage
+			ApplyPlayerDamage(playerhit, playerdamage, weaponname, player)
 		end
 
-		-- deal damage, do blood VFX
-		ApplyPlayerDamage(playerhit, playerdamage, weaponname, player)
+		-- Blood VFX
 		BloodVFX(SoundPoint, dir, playerdamage, playerhit)
 	end
 
-	return bHit, pdist, playerhit
+	return bHit, pdist, playerhit,
 end
 
 function server.SpawnFireHook(pos, chance)
