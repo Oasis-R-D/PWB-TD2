@@ -89,7 +89,7 @@ function server.secondaryFireSG(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	for i=1, 12 do
-		local pos, dir = getAimVector(mt.pos, MAX_RANGE, GLOBAL_10DEGREES, p)
+		local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_10DEGREES, p)
 		local radius = (i % 2 == 0) and 0.33 or 0
 		ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1, radius)
 	end
@@ -404,21 +404,11 @@ function client.tickPlayerSG(p, dt)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end
 		end
-
-		-- UPD AMMO HUD
-		if data.inreload == false and ammo > 0.5 then
-			clipamnt = data.clipamnt
-		elseif ammo > 0.5 then
-			clipamnt = -8 -- negative 8 means reloading
-		else
-			data.clipamntM727 = 0
-			clipamnt = -16
-		end
 	end
 end
 
 function client.drawSG()
-		if GetPlayerTool() ~= WPNID then return end
+	if GetPlayerTool() ~= WPNID then return end
 
 	local p = GetLocalPlayer()
 

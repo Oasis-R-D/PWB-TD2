@@ -7,6 +7,10 @@ local PISTOL_FASTEST_REFIRE_TIME			= 0.1 -- spam clicking firerate
 local PISTOL_ACCURACY_SHOT_PENALTY_TIME		= 0.2	-- Applied amount of time each shot adds to the time we must recover from
 local PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME	= 1.5	-- Maximum penalty to deal out
 
+-- SLIDE MOVEMENT CONSTANTS
+local VOXSIZE = 0.05 -- voxel scale of the slide
+local ATTACH = Transform(Vec(0, 0, 0)) -- point of movement? Idk really this code confuses me
+
 -- Per weapon constants
 local RELOAD_TIME = 1.433 -- seconds
 local RELOAD_SOUND = "MOD/snd/pistol_reload.ogg"
@@ -40,6 +44,10 @@ function createPlayerCLIENTdataPIST9MM()
 		SoonestPrimaryAttack = GetTime(),
 		AccuracyPenalty = 0.0,
 		NextPrimaryAttack = 0.0,
+
+		body = nil,
+		slide = nil,
+		slideTransform = nil,
 	}
 end
 
@@ -164,6 +172,7 @@ end
 
 local camSineTime = nil
 local camRecoilY = 0
+local SlideTime = nil
 
 function client.tickPlayerPIST9MM(p, dt)
 	if not IsToolEnabled(WPNID, p) then 
@@ -205,6 +214,9 @@ function client.tickPlayerPIST9MM(p, dt)
 			data.NextPrimaryAttack = GetTime() + RELOAD_TIME
 		end
 		data.inreload = true
+		if IsPlayerLocal(p) then
+			SlideTime = 0
+		end
 	-- Finish Reload
 	elseif data.inreload == true and data.NextPrimaryAttack < GetTime() then	
 		data.inreload = false
@@ -223,6 +235,7 @@ function client.tickPlayerPIST9MM(p, dt)
 				ServerCall("server.primaryFirePIST9MM", p)
 				camSineTime = 0
 				camRecoilY = rnd(-1, 1)
+				SlideTime = 0
 				PlayHaptic(shootHaptic, 1)
 
 				-- shell ejection
@@ -315,6 +328,36 @@ function client.tickPlayerPIST9MM(p, dt)
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end
+		end
+
+		--Animate Slide
+		local GunBody = GetToolBody(p)
+		if data.body ~= GunBody then
+			data.body = GunBody
+			-- Slide is the third shape in vox file. Remember original position in attachment frame
+			local shapes = GetBodyShapes(GunBody)
+			data.slide = shapes[3]
+			data.slideTransform = TransformToLocalTransform(ATTACH, GetShapeLocalTransform(data.slide))
+		end
+		if data.slide and SlideTime ~= nil then
+			SlideTime = SlideTime + dt
+
+			-- don't go over!
+			if SlideTime > 0.125 then
+				SlideTime = 0.125
+			-- Lock open during reloads
+			elseif SlideTime > 0.0625 and data.inreload == true and data.NextPrimaryAttack > (GetTime() + 0.63) then
+				SlideTime = 0.0625
+			end
+
+			ATTACH.pos = Vec(0, 0, 0.07 * math.sin(8 * math.pi * SlideTime))
+			t = TransformToParentTransform(ATTACH, data.slideTransform)
+			SetShapeLocalTransform(data.slide, t)
+
+			-- Slide has returned
+			if SlideTime == 0.125 then
+				SlideTime = nil
+			end
 		end
 	end
 end
