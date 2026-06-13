@@ -43,6 +43,10 @@ function createPlayerCLIENTdataSG()
 		shellstopump = 0.0,
 		camAltMove = false,
 		dataReset = true,
+
+		body = nil,
+		slide = nil,
+		slideTransform = nil,
 	}
 end
 
@@ -121,6 +125,7 @@ end
 
 local camSineTime = nil
 local camRecoilY = 0
+local SlideTime = nil
 
 -- in HL2, using the secondary fire with only enough ammo for the primary will fire primary instead.
 -- separated it to it's own function to allow that
@@ -339,6 +344,7 @@ function client.tickPlayerSG(p, dt)
 			data.pumptime = nil
 			-- SHELL EJECT
 			if IsPlayerLocal(p) then
+				SlideTime = 0
 				local toolBody = GetToolBody(p)
 				local transform = GetBodyTransform(toolBody)
 				local eject_origin = TransformToParentPoint(transform, Vec(CASING_ORG[1],CASING_ORG[2],CASING_ORG[3]))
@@ -403,6 +409,43 @@ function client.tickPlayerSG(p, dt)
 				SetPlayerCameraOffsetTransform(t)
 				camSineTime = camSineTime + dt
 			else camSineTime = nil end
+		end
+
+		--Animate Slide
+		local GunBody = GetToolBody(p)
+		if data.body ~= GunBody then
+			data.body = GunBody
+			-- Slide is the forth shape in vox file. Remember original position in attachment frame
+			local shapes = GetBodyShapes(GunBody)
+			data.slide = shapes[4]
+			data.slideTransform = GetShapeLocalTransform(data.slide)
+		end
+		if data.slide and SlideTime ~= nil then
+			SlideTime = SlideTime + dt
+		
+			local UseValue = SlideTime
+
+			-- don't go over, add a delay between the pump forward!
+			if SlideTime >= 0.375 then
+				SlideTime = 0.375
+			elseif SlideTime > 0.125 and SlideTime < 0.25 then
+				UseValue = 0.125 -- lock back for a little
+			elseif SlideTime >= 0.25 then
+				UseValue = SlideTime - 0.125
+			end
+
+			local position = Vec(0, 0, 0.10 * math.sin(4 * math.pi * UseValue))
+			local TOffset = Transform(position)
+			data.toolAnimator.leftHand.transform.pos = position
+
+			local t = TransformToParentTransform(TOffset, data.slideTransform)
+			SetShapeLocalTransform(data.slide, t)
+
+			-- Slide has returned
+			if SlideTime >= 0.375 then
+				SetShapeLocalTransform(data.slide, data.slideTransform) -- force back just in case
+				SlideTime = nil
+			end
 		end
 	end
 end

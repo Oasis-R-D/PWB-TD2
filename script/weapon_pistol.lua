@@ -3,13 +3,9 @@
 #version 2
 
 -- HALF-LIFE: 2 CONSTANTS
-local PISTOL_FASTEST_REFIRE_TIME			= 0.1 -- spam clicking firerate
+local PISTOL_FASTEST_REFIRE_TIME			= 0.1 	-- spam clicking firerate
 local PISTOL_ACCURACY_SHOT_PENALTY_TIME		= 0.2	-- Applied amount of time each shot adds to the time we must recover from
 local PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME	= 1.5	-- Maximum penalty to deal out
-
--- SLIDE MOVEMENT CONSTANTS
-local VOXSIZE = 0.05 -- voxel scale of the slide
-local ATTACH = Transform(Vec(0, 0, 0)) -- point of movement? Idk really this code confuses me
 
 -- Per weapon constants
 local RELOAD_TIME = 1.433 -- seconds
@@ -337,7 +333,7 @@ function client.tickPlayerPIST9MM(p, dt)
 			-- Slide is the third shape in vox file. Remember original position in attachment frame
 			local shapes = GetBodyShapes(GunBody)
 			data.slide = shapes[3]
-			data.slideTransform = TransformToLocalTransform(ATTACH, GetShapeLocalTransform(data.slide))
+			data.slideTransform = GetShapeLocalTransform(data.slide)
 		end
 		if data.slide and SlideTime ~= nil then
 			SlideTime = SlideTime + dt
@@ -350,12 +346,13 @@ function client.tickPlayerPIST9MM(p, dt)
 				SlideTime = 0.0625
 			end
 
-			ATTACH.pos = Vec(0, 0, 0.07 * math.sin(8 * math.pi * SlideTime))
-			t = TransformToParentTransform(ATTACH, data.slideTransform)
+			local TOffset = Transform(Vec(0, 0, 0.07 * math.sin(8 * math.pi * SlideTime)))
+			local t = TransformToParentTransform(TOffset, data.slideTransform)
 			SetShapeLocalTransform(data.slide, t)
 
 			-- Slide has returned
-			if SlideTime == 0.125 then
+			if SlideTime >= 0.125 then
+				SetShapeLocalTransform(data.slide, data.slideTransform) -- force back just in case
 				SlideTime = nil
 			end
 		end
