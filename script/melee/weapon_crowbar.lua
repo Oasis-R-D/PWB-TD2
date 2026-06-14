@@ -70,13 +70,22 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 		-- Hit
 		fDidHit = true
 		
+		local hitAnimator = GetBodyAnimator(GetShapeBody(pHitWorld))
+
 		-- PLAYER DAMAGE
-		local SoundPoint = VecAdd(pos, VecScale(dir, pDist))
+		local SoundPoint = VecAdd(pos, VecAdd(VecScale(dir, pDist), VecScale(pNorm, -0.33)))
 		if pHitPlayer ~= 0 then
 			ApplyPlayerDamage(pHitPlayer, DAMAGE, WPNNAME, m_pPlayer)
 			BloodVFX(SoundPoint, dir, DAMAGE, pHitPlayer)
+		elseif hitAnimator ~= 0 then
+			pHitPlayer = 1
+			BloodVFX(SoundPoint, dir, DAMAGE, nil, hitAnimator)
+
+			ApplyBodyImpulse(GetShapeBody(pHitWorld), SoundPoint, VecScale(dir, 800 * 5))
 		else
-			ShootHook(SoundPoint, VecScale(pNorm, -1), "bullet", 0.1, 0.1, MAX_RANGE, m_pPlayer, WPNID, WPNNAME, 5) -- push objects, "dent" metal
+			PlayImpactSFX(pHitWorld, SoundPoint, pNorm)
+
+			ApplyBodyImpulse(GetShapeBody(pHitWorld), SoundPoint, VecScale(dir, 800 * 5))
 			MakeHole(SoundPoint, 0.8, 0.15, 0.1) -- stronger than sledge
 		end
 		-- PLAYER DAMAGE END

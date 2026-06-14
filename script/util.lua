@@ -192,6 +192,34 @@ function getAimVector(pos, range, spreadRad, p, spreadRadVert)
 	return newPos, newDir
 end
 
+function PlayImpactSFX(shape, pos, normal, mag)
+	mag = mag or "l"
+
+	pos = VecSub(pos, VecScale(normal, 0.05))
+
+	pos = TransformToLocalPoint(GetShapeWorldTransform(shape), pos)
+
+	for i = 1, 3 do
+		pos[i] = math.floor(pos[i]*10)
+	end
+
+	local material = GetShapeMaterialAtIndex(shape, pos[1], pos[2], pos[3])
+
+	-- Some materials share sounds!
+	local playMat = material
+	if playMat == "rock" then
+		playMat = "masonry"
+	elseif playMat == "plaster" then
+		playMat = "plastic"
+	elseif playMat == "hardmetal" then
+		playMat = "metal"
+	end
+
+	if playMat ~= "" then PlaySound(LoadSound(playMat .. "/hit-" .. mag .. "0.ogg")) end
+
+	DebugPrint(material)
+end
+
 -- hook the Shoot func to add new stuff
 function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, impulseMult, radius)
 	impulseMult = impulseMult or 1
