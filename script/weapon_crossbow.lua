@@ -80,70 +80,91 @@ function server.tickCROSS(dt)
 	for index = 1, #CrossbowBolts do
 		local data = CrossbowBolts[index]
 
-		if data.totalDist > 1000 then -- make 500 if using HL2 speed
-			Delete(data.model)
-			table.remove(CrossbowBolts, index)
-		else
-			PointLight(data.curPos, 0.66,0.22,0, 0.2)
+		if data ~= nil then
+			if data.totalDist > 1000 then -- make 500 if using HL2 speed
+				Delete(data.model)
+				table.remove(CrossbowBolts, index)
+			else
+				PointLight(data.curPos, 0.66,0.22,0, 0.2)
 
-			QueryRequire("large visible physical")
-			QueryRejectBody(data.model)
-			local hit, dist, shape, hitPlayer, _, normal = QueryShot(data.curPos, data.curDir, BALL_VELOCITY * dt, 0.0, data.owner)
+				QueryRequire("large visible physical")
+				QueryRejectBody(data.model)
+				local hit, dist, shape, hitPlayer, _, normal = QueryShot(data.curPos, data.curDir, BALL_VELOCITY * dt, 0.0, data.owner)
 
-			data.curPos= VecAdd(data.curPos, VecScale(data.curDir, dist))
-			
-			data.totalDist = data.totalDist + dist
+				data.curPos = VecAdd(data.curPos, VecScale(data.curDir, dist))
+				
+				data.totalDist = data.totalDist + dist
 
-			SetBodyTransform(data.model, Transform(data.curPos, QuatLookAt(Vec(), data.curDir)))
+				SetBodyTransform(data.model, Transform(data.curPos, QuatLookAt(Vec(), data.curDir)))
 
-			-- damage, vfx
-			if hit then
-				if hitPlayer ~= 0 then
-					PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
+				-- damage, vfx
+				if hit then
+					local hitAnimator = GetBodyAnimator(GetShapeBody(shape))
 
-					ApplyPlayerDamage(hitPlayer, PLAYERDAMAGE, WPNNAME, data.owner)
-					BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, hitPlayer)
+					if hitPlayer ~= 0 then
+						PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
 
-					Delete(data.model)
-					table.remove(CrossbowBolts, index)
-				else
-					-- See if we should reflect off this surface
-					local hitDot = VecDot(normal, VecScale(data.curDir, -1))
-					if hitDot < 0.5 and dist ~= 0 then
-						ShootHook(data.curPos, data.curDir, "bullet", DAMAGE/2, 0, 10, data.owner, WPNID, WPNNAME)
-						Paint(data.curPos, 0.16, "explosion", 0.75)
+						ApplyPlayerDamage(hitPlayer, PLAYERDAMAGE, WPNNAME, data.owner)
+						BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, hitPlayer)
 
-						data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
-						data.curPos = VecAdd(data.curPos, VecScale(data.curDir, 0.01))
+						Delete(data.model)
+						table.remove(CrossbowBolts, index)
+					elseif hitAnimator ~= 0 then
+						PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
 
-						PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.25)
+						ApplyBodyImpulse(GetShapeBody(shape), data.curPos, VecScale(data.curDir, 800 * 4))
+						BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, nil, hitAnimator)
+
+						Delete(data.model)
+						table.remove(CrossbowBolts, index)
 					else
-						-- sparks
-						for i=1,10 do
-							ParticleReset()
-							ParticleCollide(1)
-							ParticleRadius(0.02, 0)
-							ParticleGravity(-10)
-							ParticleEmissive(5)
-							ParticleStretch(5)
-							ParticleTile(4)
-							ParticleColor(1,0.5,0.4, 1,0.25,0)
-							SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
-						end
+						-- See if we should reflect off this surface
+						local hitDot = VecDot(normal, VecScale(data.curDir, -1))
+						if hitDot < 0.5 and dist ~= 0 then
+							ApplyBodyImpulse(GetShapeBody(shape), data.curPos, VecScale(data.curDir, 800 * 2))
+                        	MakeHole(data.curPos, 0.5, 0.25, 0.05)
 
-						-- get mat type BEFORE we break it
-						local matType = GetShapeMaterialAtPosition(shape, data.curPos)
+							Paint(data.curPos, 0.3, "explosion", 0.75)
 
-						ShootHook(data.curPos, data.curDir, "bullet", DAMAGE, 0, 10, data.owner, WPNID, WPNNAME)
+							data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
+							data.curPos = VecAdd(data.curPos, VecScale(data.curDir, 0.01))
 
-						server.SpawnFireHook(data.curPos, 75)
-						Paint(data.curPos, 0.33, "explosion", 0.75)
+							PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.25)
+						else
+							-- sparks
+							for i=1,10 do
+								ParticleReset()
+								ParticleCollide(1)
+								ParticleRadius(0.02, 0)
+								ParticleGravity(-10)
+								ParticleEmissive(5)
+								ParticleStretch(5)
+								ParticleTile(4)
+								ParticleColor(1,0.5,0.4, 1,0.25,0)
+								SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
+							end
 
-						if matType ~= "glass" or HasTag(GetShapeBody(shape), "unbreakable") == true then
-							PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
+							-- get mat type BEFORE we break it
+							local pos = VecSub(data.curPos, VecScale(normal, 0.05))
+							pos = TransformToLocalPoint(GetShapeWorldTransform(shape), pos)
+							for i = 1, 3 do
+								pos[i] = math.floor(pos[i]*10)
+							end
 
-							Delete(data.model)
-							table.remove(CrossbowBolts, index)
+							local matType = GetShapeMaterialAtIndex(shape, pos[1], pos[2], pos[3])
+
+							ApplyBodyImpulse(GetShapeBody(shape), data.curPos, VecScale(data.curDir, 800 * 4))
+                        	MakeHole(data.curPos, 0.75, 0.4, 0.25)
+
+							server.SpawnFireHook(data.curPos, 80)
+							Paint(data.curPos, 0.5, "explosion", 0.75)
+
+							if matType ~= "glass" or HasTag(GetShapeBody(shape), "unbreakable") == true then
+								PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
+
+								Delete(data.model)
+								table.remove(CrossbowBolts, index)
+							end
 						end
 					end
 				end
@@ -198,7 +219,6 @@ function client.tickCROSS(dt)
 	end
 end
 
-clipamnt = 0
 local camSineTime = nil
 
 -- stolen from glock, used to hide/show bolt

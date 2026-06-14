@@ -115,121 +115,13 @@ function server.tickAR2(dt)
 	for index = 1, #AR2balls do
 		local data = AR2balls[index]
 
-		data.explTimer = data.explTimer - dt
+		if data ~= nil then
+			data.explTimer = data.explTimer - dt
 
-		PointLight(data.curPos, 0,0.35,1, 1)
+			PointLight(data.curPos, 0,0.35,1, 1)
 
-		if data.explTimer <= 0 then
-			for i=1,40 do
-				ParticleReset()
-				ParticleCollide(1)
-				ParticleRadius(0.02, 0)
-				ParticleGravity(-10)
-				ParticleEmissive(5)
-				ParticleStretch(5)
-				ParticleTile(4)
-				ParticleColor(1,1,1)
-				SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
-			end
-
-			for i=1,100 do
-				ParticleReset()
-				ParticleCollide(1)
-				ParticleRadius(math.random(1,5)*0.1, 0.5)
-				ParticleGravity(0)
-				ParticleTile(0)
-				ParticleColor(1,1,1, 0,0,0)
-				ParticleDrag(math.random(1,10)*0.1)
-				ParticleAlpha(0.5,0)
-				SpawnParticle(data.curPos, Vec(math.sin(i) * math.random(5,15), math.random(-3,3), math.cos(i) * math.random(5,15)), math.random(1,10)*0.1)
-			end
-
-			PlaySound(LoadSound(BALL_DIE), data.curPos, 1)
-			
-			table.remove(AR2balls, index)
-		else -- simulate physics
-			QueryRejectBody(GetToolBody(data.owner))
-			QueryInclude("player")
-			local hit, dist, normal = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
-
-			local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
-			
-			if dist == 0 then
-				endPoint = VecAdd(data.curPos, VecScale(data.curDir, 10 * dt))
-			end
-			
-			data.curPos = endPoint
-
-			if hit and dist ~= 0 then
-				-- do damage
-				_, _, ImpactedPlayer = ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
-				
-				-- Get the best target
-				local bestTarget = -1
-				if isMP() == true then
-					if ImpactedPlayer ~= 0 then -- target next player directly
-						local bestDist = 100
-						for target in Players() do
-							if isAttractiveTarget(target, index) == true and target ~= ImpactedPlayer then
-								local distance = VecLength(VecSub(GetPlayerPos(target), data.curPos))
-								if distance < bestDist then
-									bestTarget = target
-									bestDist = distance
-								end
-							end
-						end
-					else -- normal targetting -- TO-DO: broken
-						local targettablePlayers = {}
-
-						table.insert(targettablePlayers, ImpactedPlayer)
-
-						local dir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2))
-						local foundTarget = -1
-
-						repeat
-							for _, alreadyHit in pairs(targettablePlayers) do
-								QueryRejectPlayer(alreadyHit)
-							end
-
-							_, _, _, foundTarget = QueryShot(data.curPos, dir, 26.01, 6.5)
-							table.insert(targettablePlayers, foundTarget)
-						until foundTarget == 0
-
-						if #targettablePlayers ~= 0 then
-							local bestDist = 100
-							for target in pairs(targettablePlayers) do
-								if isAttractiveTarget(target, index) == true then
-									local between = VecSub(GetPlayerPos(target), data.curPos)
-									local dotprod = VecDot(VecNormalize(between), dir)
-									if dotprod > 0.966 then
-										local distance = VecLength(between)
-										if distance < bestDist then
-											bestTarget = target
-											bestDist = distance
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-
-				-- reflect
-				if bestTarget ~= -1 then -- found a good target
-					data.curDir = VecNormalize(VecSub(GetPlayerPos(bestTarget), data.curPos))
-					Paint(data.curPos, 0.83, "explosion", 0.8) -- bigger (no real reason)
-				else
-					data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2))
-					Paint(data.curPos, 0.66, "explosion", 0.8)
-				end
-
-				PlaySound(LoadSound(BALL_HIT), data.curPos, 0.5)
-				
-				-- spawn fire sometimes
-				server.SpawnFireHook(data.curPos, 66)
-
-				-- sparks
-				for i=1,20 do
+			if data.explTimer <= 0 then
+				for i=1,40 do
 					ParticleReset()
 					ParticleCollide(1)
 					ParticleRadius(0.02, 0)
@@ -240,24 +132,134 @@ function server.tickAR2(dt)
 					ParticleColor(1,1,1)
 					SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
 				end
+
+				for i=1,100 do
+					ParticleReset()
+					ParticleCollide(1)
+					ParticleRadius(math.random(1,5)*0.1, 0.5)
+					ParticleGravity(0)
+					ParticleTile(0)
+					ParticleColor(1,1,1, 0,0,0)
+					ParticleDrag(math.random(1,10)*0.1)
+					ParticleAlpha(0.5,0)
+					SpawnParticle(data.curPos, Vec(math.sin(i) * math.random(5,15), math.random(-3,3), math.cos(i) * math.random(5,15)), math.random(1,10)*0.1)
+				end
+
+				PlaySound(LoadSound(BALL_DIE), data.curPos, 1)
+				
+				table.remove(AR2balls, index)
+			else -- simulate physics
+				QueryRejectBody(GetToolBody(data.owner))
+				QueryInclude("player")
+				local hit, dist, normal = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
+
+				local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
+				
+				if dist == 0 then
+					endPoint = VecAdd(data.curPos, VecScale(data.curDir, 10 * dt))
+				end
+				
+				data.curPos = endPoint
+
+				if hit and dist ~= 0 then
+					-- do damage
+					_, _, ImpactedPlayer = ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
+					
+					-- Get the best target
+					local bestTarget = -1
+					if isMP() == true then
+						if ImpactedPlayer ~= 0 then -- target next player directly
+							local bestDist = 100
+							for target in Players() do
+								if isAttractiveTarget(target, index) == true and target ~= ImpactedPlayer then
+									local distance = VecLength(VecSub(GetPlayerPos(target), data.curPos))
+									if distance < bestDist then
+										bestTarget = target
+										bestDist = distance
+									end
+								end
+							end
+						else -- normal targetting -- TO-DO: broken
+							local targettablePlayers = {}
+
+							table.insert(targettablePlayers, ImpactedPlayer)
+
+							local dir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2))
+							local foundTarget = -1
+
+							repeat
+								for _, alreadyHit in pairs(targettablePlayers) do
+									QueryRejectPlayer(alreadyHit)
+								end
+
+								_, _, _, foundTarget = QueryShot(data.curPos, dir, 26.01, 6.5)
+								table.insert(targettablePlayers, foundTarget)
+							until foundTarget == 0
+
+							if #targettablePlayers ~= 0 then
+								local bestDist = 100
+								for target in pairs(targettablePlayers) do
+									if isAttractiveTarget(target, index) == true then
+										local between = VecSub(GetPlayerPos(target), data.curPos)
+										local dotprod = VecDot(VecNormalize(between), dir)
+										if dotprod > 0.966 then
+											local distance = VecLength(between)
+											if distance < bestDist then
+												bestTarget = target
+												bestDist = distance
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+
+					-- reflect
+					if bestTarget ~= -1 then -- found a good target
+						data.curDir = VecNormalize(VecSub(GetPlayerPos(bestTarget), data.curPos))
+						Paint(data.curPos, 0.83, "explosion", 0.8) -- bigger (no real reason)
+					else
+						data.curDir = VecSub(data.curDir, VecScale(normal, VecDot(normal, data.curDir) * 2))
+						Paint(data.curPos, 0.66, "explosion", 0.8)
+					end
+
+					PlaySound(LoadSound(BALL_HIT), data.curPos, 0.5)
+					
+					-- spawn fire sometimes
+					server.SpawnFireHook(data.curPos, 66)
+
+					-- sparks
+					for i=1,20 do
+						ParticleReset()
+						ParticleCollide(1)
+						ParticleRadius(0.02, 0)
+						ParticleGravity(-10)
+						ParticleEmissive(5)
+						ParticleStretch(5)
+						ParticleTile(4)
+						ParticleColor(1,1,1)
+						SpawnParticle(data.curPos, Vec(math.random(-2,2), math.random(1,4), math.random(-2,2)), 1)
+					end
+				end
+
+				ParticleReset()
+				ParticleCollide(1)
+				ParticleRadius(0.3, 0)
+				ParticleGravity(0)
+				ParticleEmissive(5)
+				ParticleStretch(5)
+				ParticleTile(5)
+				local colorRnd = math.random()
+				local colorRnd2 = math.random()
+				local colorRnd3 = math.random()
+				ParticleColor(0,0.35,1, 1,0.35,0)
+				SpawnParticle(data.curPos, Vec((colorRnd - 0.5), (colorRnd2 - 0.5), (colorRnd3 - 0.5)), 0.3)
+				ParticleTile(4)
+				SpawnParticle(data.curPos, Vec((colorRnd - 0.5) * 2, (colorRnd2 - 0.5) * 2, (colorRnd3 - 0.5) * 2), 0.1)
+
+				PlayLoop(ballFlyLoop, data.curPos)
 			end
-
-			ParticleReset()
-			ParticleCollide(1)
-			ParticleRadius(0.3, 0)
-			ParticleGravity(0)
-			ParticleEmissive(5)
-			ParticleStretch(5)
-			ParticleTile(5)
-			local colorRnd = math.random()
-			local colorRnd2 = math.random()
-			local colorRnd3 = math.random()
-			ParticleColor(0,0.35,1, 1,0.35,0)
-			SpawnParticle(data.curPos, Vec((colorRnd - 0.5), (colorRnd2 - 0.5), (colorRnd3 - 0.5)), 0.3)
-			ParticleTile(4)
-			SpawnParticle(data.curPos, Vec((colorRnd - 0.5) * 2, (colorRnd2 - 0.5) * 2, (colorRnd3 - 0.5) * 2), 0.1)
-
-			PlayLoop(ballFlyLoop, data.curPos)
 		end
 	end
 end
