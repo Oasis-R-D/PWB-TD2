@@ -163,7 +163,7 @@ function server.tickAR2(dt)
 
 				if hit and dist ~= 0 then
 					-- do damage
-					_, _, ImpactedPlayer = ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
+					_, _, ImpactedPlayer = server.ShootHook(data.curPos, data.curDir, "shotgun", 2, 1, 10, data.owner, WPNID, WPNNAME, 2)
 					
 					-- Get the best target
 					local bestTarget = -1
@@ -274,7 +274,7 @@ function server.primaryFireAR2(p)
 
 	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_3DEGREES, p)
 	
-	local hit, dist = ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
+	local hit, dist = server.ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 
 	-- start fires sometimes (for the funny)
 	if hit == true then

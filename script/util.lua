@@ -1,12 +1,23 @@
 #version 2
 
-#include "script/include/player.lua"
+----------------------------------------------------------------------------------------------
 
-function canFire(p, ammo, clip)
-	return ammo > 0.5 and clip > 0.5 and GetPlayerCanUseTool(p) == true
+-- hacky bit operators (ONLY FOR POWER OF 2! [otherwise these'd be very expensive])
+
+function leftShift(bits) return 2 ^ bits
 end
 
---Return a random vector of desired length
+function hasFlag(var, flag) return math.floor(var / flag) % 2 == 1
+end
+
+function addFlag(var, flag) return (var % (2 * flag) >= flag) and var or (var + flag)
+end
+
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+-- Random functions
+
 function rndVec(length)
 	local v = VecNormalize(Vec(math.random(-100,100), math.random(-100,100), math.random(-100,100)))
 	return VecScale(v, length)	
@@ -16,11 +27,10 @@ function rnd(mi, ma)
 	return math.random(1000)/1000*(ma-mi) + mi
 end
 
--- Returns true if the server is MP
--- use this for balancing or recreating features in weapons that are only in MP (or optimizations)
-function isMP()
-	return GetMaxPlayers() > 1
-end
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+-- Hud drawing
 
 function client.drawAmmo(curclip, maxclip)
 	UiPush()
@@ -49,6 +59,11 @@ function client.drawSecAmmo(curclip)
 		end
 	UiPop()
 end
+
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+-- Blood Effects
 
 function client.BloodParticles(pos, dir, damage, playerhit)
 	local impactsize = damage
@@ -113,7 +128,7 @@ function client.BloodParticles(pos, dir, damage, playerhit)
 end
 
 function BloodVFX(pos, dir, damage, playerhit, ignore)
-	ClientCall(0, "client.BloodParticles", pos, dir, damage, playerhit)
+	ClientCall(0, "client.BloodParticles", pos, dir, damage, playerhit) -- NOTE: could be worth it to have a check so you only send this to clients in the PVS
 
 	local count = 1
 	local noise = 0.1
@@ -159,6 +174,18 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 		local chance = splatDist/1
 		PaintRGBA(VecAdd(pos, VecScale(dir, bigblooddist)), 0.5, rnd(0.166, 0.2), 0.0, 0.0, 1.0, chance)
 	end
+end
+
+----------------------------------------------------------------------------------------------
+
+-- Returns true if the server is MP
+-- use this for balancing or recreating features in weapons that are only in MP (or optimizations)
+function isMP()
+	return GetMaxPlayers() > 1
+end
+
+function canFire(p, ammo, clip)
+	return ammo > 0.5 and clip > 0.5 and GetPlayerCanUseTool(p) == true
 end
 
 function getAimVector(pos, range, spreadRad, p, spreadRadVert)
@@ -221,7 +248,7 @@ function PlayImpactSFX(shape, pos, normal, mag)
 end
 
 -- hook the Shoot func to add new stuff
-function ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, impulseMult, radius)
+function server.ShootHook(pos, dir, shoottype, damage, playerdamage, range, player, weaponid, weaponname, impulseMult, radius)
 	impulseMult = impulseMult or 1
 	playerdamage = playerdamage or 0
 	radius = radius or 0

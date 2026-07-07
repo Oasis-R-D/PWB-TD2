@@ -22,20 +22,21 @@ GLOBAL_10DEGREES = 0.08716
 GLOBAL_15DEGREES = 0.13053
 GLOBAL_20DEGREES = 0.17365
 
+-- {func suffix, has Draw()}
 GLOBAL_WEAPONS = {
-   "CRBR",
-   "STNSTK",
+   { "CRBR",    false },
+   { "STNSTK",  false },
 
-   "SMG1",
-   "AR2",
-   "PYTH",
-   "PIST9MM",
-   "SG",
+   { "SMG1",    true  },
+   { "AR2",     true  },
+   { "PYTH",    true  },
+   { "PIST9MM", true  },
+   { "SG",      true  },
 
-   "CROSS",
+   { "CROSS",   false },
 
-   "FRAG",
-   "SLAM",
+   { "FRAG",    false },
+   { "SLAM",    false },
 }
 
 GLOBAL_WEAPONS_AMNT = #GLOBAL_WEAPONS -- only calculate this once
@@ -69,6 +70,7 @@ GLOBAL_WEAPONS_AMNT = #GLOBAL_WEAPONS -- only calculate this once
 
 server.weaponTicks = {}
 client.weaponTicks = {}
+client.weaponDraws = {}
 ----------------------------------------------------------------------------------------------
 
 -- this file calls all weapon functions. To add your weapon just add it's functions here (make sure to #include it's lua file).
@@ -83,14 +85,16 @@ client.weaponTicks = {}
 
 -- TO-DO: 
 -- - redo 357 model?
+-- - add weapon flags (replaces the has Draw() bool)
+-- - maybe redo the camera movement system (recreate half-life pev->punchangle system?)
 
 ----------------------------------------------------------------------------------------------
 
 -- declare weapons, pickup amounts
 function server.init()
    for i = 1, GLOBAL_WEAPONS_AMNT do
-      server["init" .. GLOBAL_WEAPONS[i]]()
-      table.insert(server.weaponTicks, server["tick" .. GLOBAL_WEAPONS[i]]) 
+      server["init" .. GLOBAL_WEAPONS[i][1]]()
+      table.insert(server.weaponTicks, server["tick" .. GLOBAL_WEAPONS[i][1]]) 
    end
 
    -- only on server!
@@ -109,9 +113,16 @@ end
 -- mostly to load haptics, amongst other things
 function client.init()
    for i = 1, GLOBAL_WEAPONS_AMNT do
-      client["init" .. GLOBAL_WEAPONS[i]]()
-      table.insert(client.weaponTicks, client["tick" .. GLOBAL_WEAPONS[i]]) 
+      client["init" .. GLOBAL_WEAPONS[i][1]]()
+      table.insert(client.weaponTicks, client["tick" .. GLOBAL_WEAPONS[i][1]])
+
+      -- Set up weapon draws
+      if GLOBAL_WEAPONS[i][2] == true then
+         table.insert(client.weaponDraws, client["draw" .. GLOBAL_WEAPONS[i][1]])
+      end
    end
+
+   GLOBAL_WEAPON_DRAWS_AMNT = #client.weaponDraws
 end
 
 function client.tick(dt)
@@ -120,14 +131,13 @@ function client.tick(dt)
    end
 end
 
--- Draw the magazine amount hud
--- too lazy to make this automated!!! (also not all weapons need UI)
+-- Draws the magazine hud and scopes
 function client.draw()
+   if not GLOBAL_WEAPON_DRAWS_AMNT then return end
+   
 	if GetPlayerHealth() <= 0 or GetPlayerVehicle() ~= 0 then return end
    
-	client.drawPIST9MM()
-	client.drawAR2()
-	client.drawSMG1()
-	client.drawPYTH()
-	client.drawSG()
+   for i = 1, GLOBAL_WEAPON_DRAWS_AMNT do
+      client.weaponDraws[i]()
+   end
 end

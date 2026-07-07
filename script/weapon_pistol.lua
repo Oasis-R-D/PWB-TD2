@@ -137,7 +137,7 @@ function server.primaryFirePIST9MM(p)
 	local data = playerData[p]
 
 	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, server.getPlayerSpread(data), p)
-	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 2)
+	server.ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 2)
 	
 	data.AccuracyPenalty = data.AccuracyPenalty + PISTOL_ACCURACY_SHOT_PENALTY_TIME
 

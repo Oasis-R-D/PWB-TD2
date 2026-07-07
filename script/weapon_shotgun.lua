@@ -75,13 +75,13 @@ function server.primaryFireSG(p)
 
 	-- first shot is laser accurate
 	local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, 0, p)
-	ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
+	server.ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME)
 
 	-- rest aren't
 	for i=1, 6 do
 		pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_10DEGREES, p)
 		local radius = (i % 2 ~= 0) and 0.33 or 0
-		ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1, radius)
+		server.ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1, radius)
 	end
 	
 	PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
@@ -95,7 +95,7 @@ function server.secondaryFireSG(p)
 	for i=1, 12 do
 		local pos, dir = getAimVector(GetPlayerEyeTransform(p).pos, MAX_RANGE, GLOBAL_10DEGREES, p)
 		local radius = (i % 2 == 0) and 0.33 or 0
-		ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1, radius)
+		server.ShootHook(pos, dir, "bullet", DAMAGE, PLAYERDAMAGE, MAX_RANGE, p, WPNID, WPNNAME, 1, radius)
 	end
 	
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
