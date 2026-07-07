@@ -244,6 +244,7 @@ function client.tickPlayerCROSS(p, dt)
 
 	if GetPlayerTool(p) ~= WPNID then
 		playerData[p].shapesNeedsUpd = true
+		playerData[p].scoped = false
 		if IsPlayerLocal(p) then
 			camSineTime = nil
 		end
