@@ -23,7 +23,7 @@ local BALL_HIT = "MOD/snd/ar2_ball_bounce0.ogg"
 local BALL_DIE = "MOD/snd/ar2_ball_explode.ogg"
 local BALL_LOOP = "MOD/snd/ar2_ball_fly.ogg"
 
-local BALL_VELOCITY = 30
+local PROJ_VELOCITY = 30
 
 -- Per weapon data storer
 local playerData = {}
@@ -51,14 +51,6 @@ function createPlayerSERVERdataAR2()
     return {
 		firesound = nil,
 	}
-end
-
-function FindBallSERVERdataOpening()
-    local i = 1
-    while AR2balls[i] ~= nil do
-        i = i + 1
-    end
-    return i
 end
 
 function createBallSERVERdataAR2(p, pos, dir)
@@ -151,7 +143,7 @@ function server.tickAR2(dt)
 			else -- simulate physics
 				QueryRejectBody(GetToolBody(data.owner))
 				QueryInclude("player")
-				local hit, dist, normal = QueryRaycast(data.curPos, data.curDir, BALL_VELOCITY * dt)
+				local hit, dist, normal = QueryRaycast(data.curPos, data.curDir, PROJ_VELOCITY * dt)
 
 				local endPoint = VecAdd(data.curPos, VecScale(data.curDir, dist))
 				
@@ -313,7 +305,7 @@ function server.secondaryFireAR2(p)
 	pos = VecAdd(pos, VecScale(dir, 0.5))
 	
 	-- add AR2 ball to sim
-	AR2balls[FindBallSERVERdataOpening()] = createBallSERVERdataAR2(p, pos, dir)
+	AR2balls[findArrayOpening(AR2balls)] = createBallSERVERdataAR2(p, pos, dir)
 
 	PlaySound(LoadSound(ALT_FIRESOUND), mt.pos, 300)
 end

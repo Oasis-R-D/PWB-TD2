@@ -178,6 +178,14 @@ end
 
 ----------------------------------------------------------------------------------------------
 
+function findArrayOpening(array)
+    local i = 1
+    while array[i] ~= nil do
+        i = i + 1
+    end
+    return i
+end
+
 -- Returns true if the server is MP
 -- use this for balancing or recreating features in weapons that are only in MP (or optimizations)
 function isMP()

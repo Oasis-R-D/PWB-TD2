@@ -16,10 +16,10 @@ local PLAYERDAMAGE = 1.0
 local WPNID = "hl2crossbow"
 local WPNNAME = "Rebar Crossbow"
 
-local BOLT_IMPACT = "MOD/snd/crossbow_bt_hit.ogg"
-local BOLT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
+local PROJ_IMPACT = "MOD/snd/crossbow_bt_hit.ogg"
+local PROJ_IMPACT_PLAYER = "MOD/snd/crossbow_bt_player0.ogg"
 
-local BALL_VELOCITY = 128 -- 63.5 is game accurate, 128 is cooler for MP
+local PROJ_VELOCITY = 128 -- 63.5 is game accurate, 128 is cooler for MP
 
 -- Per weapon data storer
 local playerData = {}
@@ -39,14 +39,6 @@ function createPlayerCLIENTdataCROSS()
 		dataReset = true,
 		shapesNeedsUpd = true,
 	}
-end
-
-function FindBoltSERVERdataOpening()
-    local i = 1
-    while CrossbowBolts[i] ~= nil do
-        i = i + 1
-    end
-    return i
 end
 
 function createBallSERVERdataCB(p, pos, dir, body)
@@ -89,7 +81,7 @@ function server.tickCROSS(dt)
 
 				QueryRequire("large visible physical")
 				QueryRejectBody(data.model)
-				local hit, dist, shape, hitPlayer, _, normal = QueryShot(data.curPos, data.curDir, BALL_VELOCITY * dt, 0.0, data.owner)
+				local hit, dist, shape, hitPlayer, _, normal = QueryShot(data.curPos, data.curDir, PROJ_VELOCITY * dt, 0.0, data.owner)
 
 				data.curPos = VecAdd(data.curPos, VecScale(data.curDir, dist))
 				
@@ -102,7 +94,7 @@ function server.tickCROSS(dt)
 					local hitAnimator = GetBodyAnimator(GetShapeBody(shape))
 
 					if hitPlayer ~= 0 then
-						PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
+						PlaySound(LoadSound(PROJ_IMPACT_PLAYER), data.curPos, 0.5)
 
 						ApplyPlayerDamage(hitPlayer, PLAYERDAMAGE, WPNNAME, data.owner)
 						BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, hitPlayer)
@@ -110,7 +102,7 @@ function server.tickCROSS(dt)
 						Delete(data.model)
 						table.remove(CrossbowBolts, index)
 					elseif hitAnimator ~= 0 then
-						PlaySound(LoadSound(BOLT_PLAYER), data.curPos, 0.5)
+						PlaySound(LoadSound(PROJ_IMPACT_PLAYER), data.curPos, 0.5)
 
 						ApplyBodyImpulse(GetShapeBody(shape), data.curPos, VecScale(data.curDir, 800 * 4))
 						BloodVFX(data.curPos, data.curDir, PLAYERDAMAGE, nil, hitAnimator)
@@ -129,7 +121,7 @@ function server.tickCROSS(dt)
 							data.curDir = VecAdd(VecScale(normal, 2 * hitDot), data.curDir)
 							data.curPos = VecAdd(data.curPos, VecScale(data.curDir, 0.01))
 
-							PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.25)
+							PlaySound(LoadSound(PROJ_IMPACT), data.curPos, 0.25)
 						else
 							-- sparks
 							for i=1,10 do
@@ -160,7 +152,7 @@ function server.tickCROSS(dt)
 							Paint(data.curPos, 0.5, "explosion", 0.75)
 
 							if matType ~= "glass" or HasTag(GetShapeBody(shape), "unbreakable") == true then
-								PlaySound(LoadSound(BOLT_IMPACT), data.curPos, 0.5)
+								PlaySound(LoadSound(PROJ_IMPACT), data.curPos, 0.5)
 
 								Delete(data.model)
 								table.remove(CrossbowBolts, index)
@@ -190,7 +182,7 @@ function server.primaryFireCROSS(p)
 	local boltEnt = Spawn(xml, GrenTrans)
 
 	-- add bolt to sim
-	CrossbowBolts[FindBoltSERVERdataOpening()] = createBallSERVERdataCB(p, pos, dir, boltEnt[1])
+	CrossbowBolts[findArrayOpening(CrossbowBolts)] = createBallSERVERdataCB(p, pos, dir, boltEnt[1])
 
 	PlaySound(LoadSound(PRIM_FIRESOUND), pos, 300)
 	PlaySound(LoadSound(PRIM_FIRESOUND2), pos, 10)
