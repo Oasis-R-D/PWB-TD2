@@ -23,7 +23,7 @@ local PLAYERDAMAGE = 0.08
 local MAX_RANGE = 125.0
 local WPNID = "hl2pistol"
 local WPNNAME = "9mm Pistol"
-local CASING_ORG = Vec(0.02, 0.3, 0.05)
+local CASING_ORG = Vec(-0.06, 0.2, 0.13)
 
 -- Per weapon data storer
 local playerData = {}
@@ -235,19 +235,7 @@ function client.tickPlayerPIST9MM(p, dt)
 				PlayHaptic(shootHaptic, 1)
 
 				-- shell ejection
-				local transform = GetBodyTransform(toolBody)
-				local eject_origin = TransformToParentPoint(transform, Vec(CASING_ORG[1],CASING_ORG[2],CASING_ORG[3]))
-				local eject_direction=TransformToParentVec(transform, Vec(1, 0.2, 0))
-				ParticleReset()
-				ParticleGravity(rnd(-2, -8))
-				ParticleRadius(0.02)
-				ParticleAlpha(1)
-				ParticleColor(0.8, 0.6, 0)
-				ParticleTile(6)
-				ParticleDrag(0.125)
-				ParticleSticky(0.5)
-				ParticleCollide(1)
-				SpawnParticle(eject_origin, VecAdd(VecScale(eject_direction,3), playervel), 5)
+				ejectBrass(p, CASING_ORG, Vec(0.6, 0.2, 0), "MOD/prefab/casing_9mm.xml", FSFX_BRASS)
 			else
 				data.firesound = PlaySound(LoadSound(NONCLIENTPRIM_FIRESOUND), mt.pos, 300)
 			end

@@ -1,22 +1,63 @@
 #version 2
 
 ----------------------------------------------------------------------------------------------
-
--- hacky bit operators (ONLY FOR POWER OF 2! [otherwise these'd be very expensive])
-
-function leftShift(bits) return 2 ^ bits
-end
-
-function hasFlag(var, flag) return math.floor(var / flag) % 2 == 1
-end
-
-function addFlag(var, flag) return (var % (2 * flag) >= flag) and var or (var + flag)
-end
-
-----------------------------------------------------------------------------------------------
+-- Temp-Ents
 ----------------------------------------------------------------------------------------------
 
+function CL_TempEntAlloc(org, model)
+
+	local tempent = newTempEnt()
+
+	tempent.flags = FTENT_NONE
+	tempent.die = GetTime() + 0.75
+	tempent.entity.model = Spawn(model, Transform(org))[1]
+	tempent.fadeSpeed = 0.5
+	tempent.hitSound = 0
+	tempent.clientIndex = -1
+	tempent.bounceFactor = 1.0
+	tempent.hitcallback = 0
+	tempent.callback = 0
+	tempent.priority = 0
+	tempent.entity.origin = org
+
+	local index = findArrayOpening(gpTempEnts)
+	gpTempEnts[index] = tempent
+
+	return gpTempEnts[index]
+end
+
+function R_TempModel(pos, velocity, angles, life, model, soundtype)
+
+	local tempent = CL_TempEntAlloc(pos, model)
+
+	tempent.entity.angles = angles
+	tempent.flags = addFlags(FTENT_NONE, FTENT_COLLIDEWORLD, FTENT_GRAVITY, FTENT_BUOYANT)
+	tempent.hitSound = soundtype
+	tempent.frameMax = 0 -- tempent.frameMax = framecount
+	
+	tempent.entity.velocity = velocity
+	tempent.die = life + GetTime()
+end
+
+function ejectBrass(p, org, dir, model, casingtype)
+	local transform = GetBodyTransform(GetToolBody(p))
+
+	local eject_origin = TransformToParentPoint(transform, org)
+
+	-- add some randomization (values multiplied 0.75x)
+	dir[1] = dir[1] + rnd(0.9525, 1.3335)
+	dir[2] = dir[2] + rnd(1.905, 2.8575)
+	
+	local eject_vel = TransformToParentVec(transform, dir)
+	eject_vel = VecAdd(eject_vel, GetPlayerVelocity(p))
+
+	local x, y, z = GetQuatEuler(GetPlayerEyeTransform(p).rot)
+
+	R_TempModel(eject_origin, eject_vel, Vec(x, y, z), 2.5, model, casingtype)
+end
+----------------------------------------------------------------------------------------------
 -- Random functions
+----------------------------------------------------------------------------------------------
 
 function rndVec(length)
 	local v = VecNormalize(Vec(math.random(-100,100), math.random(-100,100), math.random(-100,100)))
@@ -28,9 +69,8 @@ function rnd(mi, ma)
 end
 
 ----------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------
-
 -- Hud drawing
+----------------------------------------------------------------------------------------------
 
 function client.drawAmmo(curclip, maxclip)
 	UiPush()
@@ -61,9 +101,8 @@ function client.drawSecAmmo(curclip)
 end
 
 ----------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------
-
 -- Blood Effects
+----------------------------------------------------------------------------------------------
 
 function client.BloodParticles(pos, dir, damage, playerhit)
 	local impactsize = damage
@@ -133,17 +172,17 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 	local count = 1
 	local noise = 0.1
 	if damage < 0.1 then
-		noise = 0.2;
-		count = 3;
+		noise = 0.2
+		count = 3
 	elseif damage < 0.25 then
-		noise = 0.35;
-		count = 6;
+		noise = 0.35
+		count = 6
 	elseif damage > 0.8 then
-		noise = 0.6;
-		count = 18;
+		noise = 0.6
+		count = 18
 	else
-		noise = 0.35;
-		count = 12;
+		noise = 0.35
+		count = 12
 	end
 
 	-- Impact for animators
@@ -177,6 +216,8 @@ function BloodVFX(pos, dir, damage, playerhit, ignore)
 end
 
 ----------------------------------------------------------------------------------------------
+-- UTILs
+----------------------------------------------------------------------------------------------
 
 function findArrayOpening(array)
     local i = 1
@@ -187,10 +228,19 @@ function findArrayOpening(array)
 end
 
 -- Returns true if the server is MP
--- use this for balancing or recreating features in weapons that are only in MP (or optimizations)
 function isMP()
 	return GetMaxPlayers() > 1
 end
+
+function server.SpawnFireHook(pos, chance)
+	if math.random(0, 100) <= chance then
+		SpawnFire(pos)
+	end
+end
+
+----------------------------------------------------------------------------------------------
+-- Weapon UTILs
+----------------------------------------------------------------------------------------------
 
 function canFire(p, ammo, clip)
 	return ammo > 0.5 and clip > 0.5 and GetPlayerCanUseTool(p) == true
@@ -330,12 +380,6 @@ function server.ShootHook(pos, dir, shoottype, damage, playerdamage, range, play
 	return bHit, pdist, playerhit
 end
 
-function server.SpawnFireHook(pos, chance)
-	if math.random(0, 100) <= chance then
-		SpawnFire(pos)
-	end
-end
-
 function server.depleteAmmo(p, id, amount)
 	amount = amount or 1
 	local ammo = GetToolAmmo(id, p)
@@ -343,3 +387,6 @@ function server.depleteAmmo(p, id, amount)
 		SetToolAmmo(id, ammo-amount, p)
 	end
 end
+
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
