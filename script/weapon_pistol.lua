@@ -334,14 +334,14 @@ function client.tickPlayerPIST9MM(p, dt)
 				SlideTime = 0.0625
 			end
 
-			local TOffset = Transform(Vec(0, 0, 0.07 * math.sin(8 * math.pi * SlideTime)))
-			local t = TransformToParentTransform(TOffset, data.slideTransform)
-			SetShapeLocalTransform(data.slide, t)
-
 			-- Slide has returned
 			if SlideTime >= 0.125 then
 				SetShapeLocalTransform(data.slide, data.slideTransform) -- force back just in case
 				SlideTime = nil
+			else
+				local TOffset = Transform(Vec(0, 0, 0.07 * math.sin(8 * math.pi * SlideTime)))
+				local t = TransformToParentTransform(TOffset, data.slideTransform)
+				SetShapeLocalTransform(data.slide, t)
 			end
 		end
 	end

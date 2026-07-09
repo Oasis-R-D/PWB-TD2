@@ -419,17 +419,17 @@ function client.tickPlayerSG(p, dt)
 				UseValue = SlideTime - 0.125
 			end
 
-			local position = Vec(0, 0, 0.10 * math.sin(4 * math.pi * UseValue))
-			local TOffset = Transform(position)
-			data.toolAnimator.leftHand.transform.pos = position
-
-			local t = TransformToParentTransform(TOffset, data.slideTransform)
-			SetShapeLocalTransform(data.slide, t)
-
 			-- Slide has returned
 			if SlideTime >= 0.375 then
 				SetShapeLocalTransform(data.slide, data.slideTransform) -- force back just in case
 				SlideTime = nil
+			else
+				local position = Vec(0, 0, 0.10 * math.sin(4 * math.pi * UseValue))
+				local TOffset = Transform(position)
+				data.toolAnimator.leftHand.transform.pos = position
+
+				local t = TransformToParentTransform(TOffset, data.slideTransform)
+				SetShapeLocalTransform(data.slide, t)
 			end
 		end
 	end
