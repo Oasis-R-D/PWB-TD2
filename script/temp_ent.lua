@@ -212,7 +212,7 @@ function HUD_TempEntUpdate_(
 							pTemp.entity.velocity = VecAdd(pTemp.entity.velocity, VecScale(traceNormal, -proj * 2))
 
 							-- Reflect rotation (fake)
-							pTemp.entity.angles[3] = -pTemp.entity.angles[3]
+							pTemp.entity.angles[2] = -pTemp.entity.angles[2] -- axis 2 seems to be correct (instead of 3)
 						end
 
 						if damp ~= 1 then
