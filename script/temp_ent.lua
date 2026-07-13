@@ -152,7 +152,7 @@ function HUD_TempEntUpdate_(
 					QueryInclude("animator")
 				end
 
-				QueryRejectBody(pTemp.entity.model)
+				QueryRequire("visible physical")
 				local hit, dist, traceNormal = QueryRaycast(pTemp.entity.prevOrigin, betweenDir, betweenLen, 0.02)
 				
 				if hit == true then
@@ -182,7 +182,7 @@ function HUD_TempEntUpdate_(
 								damp = 0 -- Stop
 								pTemp.flags = clearFlags(pTemp.flags, FTENT_ROTATE, FTENT_GRAVITY, FTENT_SLOWGRAVITY, FTENT_COLLIDEWORLD, FTENT_SMOKETRAIL)
 								pTemp.entity.angles[1] = 0
-								pTemp.entity.angles[2] = 0
+								--pTemp.entity.angles[2] = 0
 							end
 						end
 					end

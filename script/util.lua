@@ -51,7 +51,7 @@ function ejectBrass(p, org, dir, model, casingtype)
 	local eject_vel = TransformToParentVec(transform, dir)
 	eject_vel = VecAdd(eject_vel, GetPlayerVelocity(p))
 
-	local x, y, z = GetQuatEuler(GetPlayerEyeTransform(p).rot)
+	local x, y, z = GetQuatEuler(transform.rot)
 
 	R_TempModel(eject_origin, eject_vel, Vec(x, y, z), 2.5, model, casingtype)
 end
