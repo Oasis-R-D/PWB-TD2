@@ -282,6 +282,8 @@ function PlayImpactSFX(shape, pos, normal, mag)
 
 	pos = VecSub(pos, VecScale(normal, 0.05))
 
+	local playPos = pos
+
 	pos = TransformToLocalPoint(GetShapeWorldTransform(shape), pos)
 
 	for i = 1, 3 do
@@ -300,7 +302,7 @@ function PlayImpactSFX(shape, pos, normal, mag)
 		playMat = "metal"
 	end
 
-	if playMat ~= "" then PlaySound(LoadSound(playMat .. "/hit-" .. mag .. "0.ogg")) end
+	if playMat ~= "" then PlaySound(LoadSound(playMat .. "/hit-" .. mag .. "0.ogg"), playPos) end
 
 	DebugPrint(material)
 end
