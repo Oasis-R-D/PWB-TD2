@@ -57,7 +57,7 @@ function ejectBrass(p, org, dir, model, casingtype)
 end
 
 ----------------------------------------------------------------------------------------------
--- Goldsource Viewpunch
+-- GoldSource Viewpunch
 ----------------------------------------------------------------------------------------------
 
 local cl_punchangle = Vec(0,0,0)
