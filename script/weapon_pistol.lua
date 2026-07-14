@@ -210,64 +210,48 @@ function client.tickPlayerPIST9MM(p, dt)
 		data.inreload = false
 		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
-		if data.NextPrimaryAttack < GetTime() then
-			StopSound(data.firesound)
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt, data.NextPrimaryAttack - GetTime()) then
+		StopSound(data.firesound)
 
-			local toolBody = GetToolBody(p)
-			local playervel = GetPlayerVelocity(p)
+		local toolBody = GetToolBody(p)
+		local playervel = GetPlayerVelocity(p)
 
-			PointLight(mt.pos, 1, 0.7, 0.5, 3)
-			if IsPlayerLocal(p) then
-				data.firesound = PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
-				ServerCall("server.primaryFirePIST9MM", p)
+		PointLight(mt.pos, 1, 0.7, 0.5, 3)
+		if IsPlayerLocal(p) then
+			data.firesound = PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
+			ServerCall("server.primaryFirePIST9MM", p)
 
-				client.SRC_PunchReset()
-				client.SRC_PunchAxis(1, rnd(-0.25, -0.5))
-				client.SRC_PunchAxis(2, rnd(-0.6, 0.6))
+			client.SRC_PunchReset()
+			client.SRC_PunchAxis(1, rnd(-0.25, -0.5))
+			client.SRC_PunchAxis(2, rnd(-0.6, 0.6))
 
-				SlideTime = 0
+			SlideTime = 0
 
-				PlayHaptic(shootHaptic, 1)
+			PlayHaptic(shootHaptic, 1)
 
-				-- shell ejection
-				ejectBrass(p, CASING_ORG, Vec(0.6, 0.2, 0), "MOD/prefab/casing_9mm.xml", FSFX_BRASS)
-			else
-				data.firesound = PlaySound(LoadSound(NONCLIENTPRIM_FIRESOUND), mt.pos, 300)
-			end
-			
-			-- muzzleflash
-			for i=0, 2 do
-				ParticleReset()
-				ParticleGravity(0)
-				ParticleRadius(rnd(0.08, 0.13), 0.3)
-				ParticleAlpha(1, 0)
-				ParticleTile(5)
-				ParticleDrag(0)
-				ParticleRotation(rnd(10, -10), 0)
-				ParticleSticky(0)
-				ParticleEmissive(5, 1)
-				ParticleCollide(0)
-				ParticleColor(1,0.35,0, 1,0,0)
-				SpawnParticle(mt.pos, playervel, 0.125)
-			end
-				
-			data.clipamnt = data.clipamnt - 1
-			
-			if data.clipamnt > 0 then
-				data.NextPrimaryAttack = GetTime() + FIRERATE
-			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
-				data.NextPrimaryAttack = GetTime() + RELOAD_TIME
-				data.inreload = true
-			else
-				data.NextPrimaryAttack = GetTime() + FIRERATE
-			end
-
-			data.SoonestPrimaryAttack = GetTime() + PISTOL_FASTEST_REFIRE_TIME
-			
-			data.recoil = RECOIL_AMNT
+			-- shell ejection
+			ejectBrass(p, CASING_ORG, Vec(0.6, 0.2, 0), "MOD/prefab/casing_9mm.xml", FSFX_BRASS)
+		else
+			data.firesound = PlaySound(LoadSound(NONCLIENTPRIM_FIRESOUND), mt.pos, 300)
 		end
+		
+		muzzleFlash(mt.pos, 3, 0.08, 0.13, 0.3)
+
+		data.clipamnt = data.clipamnt - 1
+		
+		if data.clipamnt > 0 then
+			data.NextPrimaryAttack = GetTime() + FIRERATE
+		elseif ammo > 1 then
+			PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
+			data.NextPrimaryAttack = GetTime() + RELOAD_TIME
+			data.inreload = true
+		else
+			data.NextPrimaryAttack = GetTime() + FIRERATE
+		end
+
+		data.SoonestPrimaryAttack = GetTime() + PISTOL_FASTEST_REFIRE_TIME
+		
+		data.recoil = RECOIL_AMNT
 	end
 	
 	-- Allow a refire as fast as the player can click

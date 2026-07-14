@@ -139,48 +139,32 @@ function client.tickPlayerPYTH(p, dt)
 		data.inreload = false
 		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
-		if data.coolDown < 0 then	
-			PointLight(mt.pos, 1, 0.7, 0.5, 3)
-			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFirePYTH", p)
-				
-				client.SRC_PunchAxis(1, 8)
-				client.SRC_PunchAxis(2, rnd(-2, 2))
-
-				PlayHaptic(shootHaptic, 1)
-			end
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt, data.coolDown) then
+		PointLight(mt.pos, 1, 0.7, 0.5, 3)
+		if IsPlayerLocal(p) then
+			ServerCall("server.primaryFirePYTH", p)
 			
-			local playervel = GetPlayerVelocity(p)
+			client.SRC_PunchAxis(1, 8)
+			client.SRC_PunchAxis(2, rnd(-2, 2))
 
-			-- muzzleflash
-			for i=0, 3 do
-				ParticleReset()
-				ParticleGravity(0)
-				ParticleRadius(rnd(0.1, 0.15), 0.33)
-				ParticleAlpha(1, 0)
-				ParticleTile(5)
-				ParticleDrag(0)
-				ParticleRotation(rnd(10, -10), 0)
-				ParticleSticky(0)
-				ParticleEmissive(5, 1)
-				ParticleCollide(0)
-				ParticleColor(1,0.35,0, 1,0,0)
-				SpawnParticle(mt.pos, playervel, 0.125)
-			end
-				
-			data.clipamnt = data.clipamnt - 1
-			if data.clipamnt > 0 then
-				data.coolDown = FIRERATE
-			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
-				data.coolDown = RELOAD_TIME
-				data.timeuntileject = 1.35
-				data.inreload = true
-			end
-			
-			data.recoil = RECOIL_AMNT
+			PlayHaptic(shootHaptic, 1)
 		end
+		
+		local playervel = GetPlayerVelocity(p)
+
+		muzzleFlash(mt.pos, 4, 0.1, 0.15, 0.33)
+			
+		data.clipamnt = data.clipamnt - 1
+		if data.clipamnt > 0 then
+			data.coolDown = FIRERATE
+		elseif ammo > 1 then
+			PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
+			data.coolDown = RELOAD_TIME
+			data.timeuntileject = 1.35
+			data.inreload = true
+		end
+		
+		data.recoil = RECOIL_AMNT
 	-- Check Altfire
 	elseif InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then
 		if data.altCoolDown < 0 then

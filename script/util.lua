@@ -383,8 +383,27 @@ end
 -- Weapon UTILs
 ----------------------------------------------------------------------------------------------
 
-function canFire(p, ammo, clip)
-	return ammo > 0.5 and clip > 0.5 and GetPlayerCanUseTool(p) == true
+function muzzleFlash(pos, amount, minrad, maxrad, endrad, life)
+	life = life or 0.125
+
+	for i=1, amount do
+		ParticleReset()
+		ParticleGravity(0)
+		ParticleRadius(rnd(minrad, maxrad), endrad)
+		ParticleAlpha(1, 0)
+		ParticleTile(5)
+		ParticleDrag(0)
+		ParticleRotation(rnd(10, -10), 0)
+		ParticleSticky(0)
+		ParticleEmissive(5, 1)
+		ParticleCollide(0)
+		ParticleColor(1,0.35,0, 1,0,0)
+		SpawnParticle(pos, Vec(0,0,0), life) -- to-do: add player vel
+	end
+end
+
+function canFire(p, ammo, clip, cooldown)
+	return cooldown < 0 and ammo > 0.5 and clip > 0.5 and GetPlayerCanUseTool(p) == true
 end
 
 function getAimVector(pos, range, spreadRad, p, spreadRadVert)

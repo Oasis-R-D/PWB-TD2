@@ -259,28 +259,26 @@ function client.tickPlayerCROSS(p, dt)
 	data.dataReset = false
 
 	-- Check Fire
-	if InputDown("usetool", p) and canFire(p, ammo, ammo) and data.hasBolt == true then -- not a good idea to use hasbolt here, only way to prevent THE BUG
-		if data.coolDown < 0 then
-			PointLight(mt.pos, 1, 0.7, 0.5, 3)
-			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFireCROSS", p)
-				client.SRC_PunchAxis(1, 2)
+	if InputDown("usetool", p) and canFire(p, ammo, ammo, data.coolDown) and data.hasBolt == true then -- not a good idea to use hasbolt here, only way to prevent THE BUG
+		PointLight(mt.pos, 1, 0.7, 0.5, 3)
+		if IsPlayerLocal(p) then
+			ServerCall("server.primaryFireCROSS", p)
+			client.SRC_PunchAxis(1, 2)
 
-				PlayHaptic(shootHaptic, 1)
-			end
-			
-			local playervel = GetPlayerVelocity(p)
-
-			data.hasBolt = false
-			client.suppress(p, data.hasBolt)
-
-			if ammo-1 > 0 then data.timetobolt = 0.842 end
-
-			data.coolDown = FIRERATE
-			data.altCoolDown = SCOPEFIREDELAY
-
-			data.recoil = RECOIL_AMNT
+			PlayHaptic(shootHaptic, 1)
 		end
+		
+		local playervel = GetPlayerVelocity(p)
+
+		data.hasBolt = false
+		client.suppress(p, data.hasBolt)
+
+		if ammo-1 > 0 then data.timetobolt = 0.842 end
+
+		data.coolDown = FIRERATE
+		data.altCoolDown = SCOPEFIREDELAY
+
+		data.recoil = RECOIL_AMNT
 	-- Check Altfire
 	elseif InputPressed("grab", p) and GetPlayerCanUseTool(p) == true then
 		if data.altCoolDown < 0 then

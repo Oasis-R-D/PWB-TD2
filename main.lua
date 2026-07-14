@@ -95,8 +95,6 @@ client.weaponDraws = {}
 
 -- TO-DO: 
 -- - redo 357 model?
--- - add weapon flags (replaces the has Draw() bool)
--- - maybe redo the camera movement system (recreate half-life pev->punchangle system?)
 
 ----------------------------------------------------------------------------------------------
 

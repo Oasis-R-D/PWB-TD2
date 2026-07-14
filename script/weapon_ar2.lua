@@ -372,55 +372,51 @@ function client.tickPlayerAR2(p, dt)
 		data.AR2altFireAmmo = 1
 		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
-		if data.coolDown < 0 then
-			PointLight(mt.pos, 0.22,0.66,0.9, 3)
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt, data.coolDown) then
+		PointLight(mt.pos, 0.22,0.66,0.9, 3)
 
-			local playervel = GetPlayerVelocity(p)
+		local playervel = GetPlayerVelocity(p)
 
-			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFireAR2", p)
+		if IsPlayerLocal(p) then
+			ServerCall("server.primaryFireAR2", p)
 
-				client.DoMachineGunKick(8, data.timeFiring, 5)
+			client.DoMachineGunKick(8, data.timeFiring, 5)
 
-				PlayHaptic(shootHaptic, 1)
-			end
-
-			-- muzzleflash
-			for i=0, 3 do
-				ParticleReset()
-				ParticleGravity(0)
-				ParticleRadius(rnd(0.12, 0.17), 0.33)
-				ParticleAlpha(1, 0)
-				ParticleTile(5)
-				ParticleDrag(0)
-				ParticleRotation(rnd(10, -10), 0)
-				ParticleSticky(0)
-				ParticleEmissive(5, 1)
-				ParticleCollide(0)
-				ParticleColor(0,0.35,1, 1,0.35,0)
-				SpawnParticle(mt.pos, playervel, 0.125)
-			end
-			
-			data.clipamnt = data.clipamnt - 1
-			if data.clipamnt > 0 then
-				data.coolDown = FIRERATE
-			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
-				data.coolDown = RELOAD_TIME
-				data.inreload = true
-			end
-
-			data.recoil = RECOIL_AMNT
+			PlayHaptic(shootHaptic, 1)
 		end
+
+		-- muzzleflash
+		for i=0, 3 do
+			ParticleReset()
+			ParticleGravity(0)
+			ParticleRadius(rnd(0.12, 0.17), 0.33)
+			ParticleAlpha(1, 0)
+			ParticleTile(5)
+			ParticleDrag(0)
+			ParticleRotation(rnd(10, -10), 0)
+			ParticleSticky(0)
+			ParticleEmissive(5, 1)
+			ParticleCollide(0)
+			ParticleColor(0,0.35,1, 1,0.35,0)
+			SpawnParticle(mt.pos, playervel, 0.125)
+		end
+		
+		data.clipamnt = data.clipamnt - 1
+		if data.clipamnt > 0 then
+			data.coolDown = FIRERATE
+		elseif ammo > 1 then
+			PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
+			data.coolDown = RELOAD_TIME
+			data.inreload = true
+		end
+
+		data.recoil = RECOIL_AMNT
 	-- Check Altfire
-	elseif InputPressed("grab", p) and canFire(p, data.AR2altFireAmmo, data.AR2altFireAmmo) then
-		if data.altCoolDown < 0 then
-			data.coolDown = 1.0
-			data.altCoolDown = 1.5
-			data.chargedTime = 0
-			data.toolAnimator.forceActionPose = true
-		end
+	elseif InputPressed("grab", p) and canFire(p, data.AR2altFireAmmo, data.AR2altFireAmmo, data.altCoolDown) then
+		data.coolDown = 1.0
+		data.altCoolDown = 1.5
+		data.chargedTime = 0
+		data.toolAnimator.forceActionPose = true
 	end
 	
 	if InputDown("usetool", p) and data.inreload == false and ammo > 0 then

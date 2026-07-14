@@ -158,90 +158,59 @@ function client.tickPlayerSMG1(p, dt)
 		if data.clipamnt <= 0 then data.m203amnt = 1 end
 		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
-	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
-		if data.coolDown < 0 then	
-			PointLight(mt.pos, 1, 0.7, 0.5, 3)
+	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt, data.coolDown) then
+		PointLight(mt.pos, 1, 0.7, 0.5, 3)
 
-			local playervel = GetPlayerVelocity(p)
+		local playervel = GetPlayerVelocity(p)
 
-			if IsPlayerLocal(p) then
-				ServerCall("server.primaryFireSMG1", p)
+		if IsPlayerLocal(p) then
+			ServerCall("server.primaryFireSMG1", p)
 
-				client.DoMachineGunKick(1, data.timeFiring, 2)
+			client.DoMachineGunKick(1, data.timeFiring, 2)
 
-				PlayHaptic(shootHaptic, 1)
+			PlayHaptic(shootHaptic, 1)
 
-				-- shell ejection
-				ejectBrass(p, CASING_ORG, Vec(1, -0.2, 0), "MOD/prefab/casing_9mm.xml", FSFX_BRASS)
-			end
-			
-			-- muzzleflash
-			for i=0, 3 do
-				ParticleReset()
-				ParticleGravity(0)
-				ParticleRadius(rnd(0.1, 0.15), 0.33)
-				ParticleAlpha(1, 0)
-				ParticleTile(5)
-				ParticleDrag(0)
-				ParticleRotation(rnd(10, -10), 0)
-				ParticleSticky(0)
-				ParticleEmissive(5, 1)
-				ParticleCollide(0)
-				ParticleColor(1,0.35,0, 1,0,0)
-				SpawnParticle(mt.pos, playervel, 0.125)
-			end
-				
-			data.clipamnt = data.clipamnt - 1
-			if data.clipamnt > 0 then
-				data.coolDown = FIRERATE
-				data.altCoolDown = FIRERATE
-			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
-				data.coolDown = RELOAD_TIME
-				data.altCoolDown = RELOAD_TIME
-				data.inreload = true
-			end
-
-			data.recoil = RECOIL_AMNT
+			-- shell ejection
+			ejectBrass(p, CASING_ORG, Vec(1, -0.2, 0), "MOD/prefab/casing_9mm.xml", FSFX_BRASS)
 		end
+		
+		muzzleFlash(mt.pos, 4, 0.1, 0.15, 0.33)
+			
+		data.clipamnt = data.clipamnt - 1
+		if data.clipamnt > 0 then
+			data.coolDown = FIRERATE
+			data.altCoolDown = FIRERATE
+		elseif ammo > 1 then
+			PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
+			data.coolDown = RELOAD_TIME
+			data.altCoolDown = RELOAD_TIME
+			data.inreload = true
+		end
+
+		data.recoil = RECOIL_AMNT
 	-- Check Altfire
-	elseif InputPressed("grab", p) and canFire(p, data.m203amnt, data.m203amnt) then
-		if data.altCoolDown < 0 then
-			PointLight(mt.pos, 1, 0.7, 0.5, 3)
-			if IsPlayerLocal(p) then
-				ServerCall("server.secondaryFireSMG1", p)
+	elseif InputPressed("grab", p) and canFire(p, data.m203amnt, data.m203amnt, data.altCoolDown) then
+		PointLight(mt.pos, 1, 0.7, 0.5, 3)
+		if IsPlayerLocal(p) then
+			ServerCall("server.secondaryFireSMG1", p)
 
-				PlayHaptic(shootHaptic, 1)
-			end
-			
-			local toolBody = GetToolBody(p)
-			local playervel = GetPlayerVelocity(p)
-			local vectuh = VecAdd(mt.pos, Vec(0, -0.25, 0))
-			
-			-- muzzleflash
-			for i=0, 4 do
-				ParticleReset()
-				ParticleGravity(0)
-				ParticleRadius(rnd(0.1, 0.15), 0.33)
-				ParticleAlpha(1, 0)
-				ParticleTile(5)
-				ParticleDrag(0)
-				ParticleRotation(rnd(10, -10), 0)
-				ParticleSticky(0)
-				ParticleEmissive(5, 1)
-				ParticleCollide(0)
-				ParticleColor(1,0.35,0, 1,0,0)
-				SpawnParticle(vectuh, playervel, 0.125)
-			end
-			
-			data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
-			
-			data.recoil = 1.5 * RECOIL_AMNT
-			
-			data.coolDown = 0.5
-			data.altCoolDown = ALTFIRERATE
-			data.m203amnt = data.m203amnt - 1
+			PlayHaptic(shootHaptic, 1)
 		end
+		
+		local toolBody = GetToolBody(p)
+		local playervel = GetPlayerVelocity(p)
+		local ubglPos = VecAdd(mt.pos, Vec(0, -0.1, 0))
+		
+
+		muzzleFlash(ubglPos, 5, 0.1, 0.15, 0.33)
+
+		data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
+		
+		data.recoil = 1.5 * RECOIL_AMNT
+		
+		data.coolDown = 0.5
+		data.altCoolDown = ALTFIRERATE
+		data.m203amnt = data.m203amnt - 1
 	end
 	
 	if InputDown("usetool", p) and data.inreload == false and ammo > 0 then
