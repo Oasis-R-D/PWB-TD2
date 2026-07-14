@@ -8,9 +8,9 @@ local WPNNAME = "Medkit"
 local HEAL_AMNT = 0.33
 
 -- Per weapon data storer
-MEDplayers = {}
+local playerData = {}
 
-function createPlayerSERVERdataMED()
+local function createPlayerSERVERdata()
     return {
 		oldTool = "wrench",
 	}
@@ -24,13 +24,13 @@ end
 
 function server.tickMED(dt)
 	for p in PlayersAdded() do
-		MEDplayers[p] = createPlayerSERVERdataMED()
+		playerData[p] = createPlayerSERVERdata()
 		SetToolEnabled(WPNID, false, p)
 		SetToolAmmo(WPNID, 0, p)
 	end
 
 	for p in PlayersRemoved() do
-		MEDplayers[p] = nil
+		playerData[p] = nil
 	end
 
 	for p in Players() do
@@ -39,7 +39,7 @@ function server.tickMED(dt)
 end
 
 function server.tickPlayerMED(p)
-	local data = MEDplayers[p]
+	local data = playerData[p]
 
 	if GetPlayerTool(p) ~= WPNID then
 		data.oldTool = GetPlayerTool(p)

@@ -147,6 +147,9 @@ function client.tick(dt)
       client.weaponTicks[i](dt)
    end
 
+   client.GS_ApplyPlayerPunch(dt)
+   client.SRC_ApplyPlayerPunch(dt)
+   
    HUD_TempEntUpdate_(
     dt,	-- Simulation time
 	GetTime(), -- Absolute time on client

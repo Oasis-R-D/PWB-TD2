@@ -10,9 +10,7 @@ local CLIP_SIZE = 30
 local PICKUP_SIZE = 30
 local RECOIL_AMNT = 0.185
 local FIRERATE = 0.1
-local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, FIRERATE is how long until it's over
 local ALTFIRERATE = 1
-local CAMALTMOVETIME = (2 * math.pi) * (0.5 / ALTFIRERATE) -- Cam movement sine multiplier, ALTFIRERATE is how long until it's over
 local DAMAGE = 0.45
 local PLAYERDAMAGE = 0.11
 local MAX_RANGE = 100.0
@@ -31,7 +29,7 @@ local playerData = {}
 -- Stores data for all the BALLS
 AR2balls = {}
 
-function createPlayerCLIENTdataAR2()
+local function createPlayerCLIENTdata()
     return {
 		clipamnt = CLIP_SIZE,
 		AR2altFireAmmo = 1,
@@ -42,12 +40,12 @@ function createPlayerCLIENTdataAR2()
 		altCoolDown = 0.0,
 		recoil = 0.0,
 		toolAnimator = ToolAnimator(),
-		camAltMove = false,
+		timeFiring = 0.0,
 		dataReset = true,
 	}
 end
 
-function createPlayerSERVERdataAR2()
+local function createPlayerSERVERdata()
     return {
 		firesound = nil,
 	}
@@ -88,7 +86,7 @@ end
 
 function server.tickAR2(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerSERVERdataAR2()
+		playerData[p] = createPlayerSERVERdata()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
@@ -319,7 +317,7 @@ end
 
 function client.tickAR2(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataAR2();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -331,8 +329,6 @@ function client.tickAR2(dt)
 	end
 end
 
-local camSineTime = nil
-
 function getFullChargeTime()
 	return 2.5
 end
@@ -342,27 +338,22 @@ function client.tickPlayerAR2(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataAR2()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
 		playerData[p].chargedTime = nil
-		if IsPlayerLocal(p) then
-			camSineTime = nil
-		end
 		return
 	end
 
-	local pt = GetPlayerTransform(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-
-	local ammo = GetToolAmmo(WPNID, p)
-
 	if mt == nil then
 		return
 	end
+
+	local ammo = GetToolAmmo(WPNID, p)
 	
 	local data = playerData[p]
 	
@@ -371,7 +362,7 @@ function client.tickPlayerAR2(p, dt)
 
 	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamnt < CLIP_SIZE and ammo > 0.5 and data.clipamnt ~= ammo then
-		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+		PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
 		data.coolDown = RELOAD_TIME
 		data.altCoolDown = RELOAD_TIME
 		data.inreload = true
@@ -382,15 +373,16 @@ function client.tickPlayerAR2(p, dt)
 		data.clipamnt = math.min(CLIP_SIZE, ammo)
 	-- Check Fire
 	elseif InputDown("usetool", p) and canFire(p, ammo, data.clipamnt) then
-		if data.coolDown < 0 then		
+		if data.coolDown < 0 then
 			PointLight(mt.pos, 0.22,0.66,0.9, 3)
 
 			local playervel = GetPlayerVelocity(p)
 
 			if IsPlayerLocal(p) then
 				ServerCall("server.primaryFireAR2", p)
-				camSineTime = 0
-				data.camAltMove = false
+
+				client.DoMachineGunKick(8, data.timeFiring, 5)
+
 				PlayHaptic(shootHaptic, 1)
 			end
 
@@ -414,11 +406,11 @@ function client.tickPlayerAR2(p, dt)
 			if data.clipamnt > 0 then
 				data.coolDown = FIRERATE
 			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
 				data.coolDown = RELOAD_TIME
 				data.inreload = true
 			end
-			
+
 			data.recoil = RECOIL_AMNT
 		end
 	-- Check Altfire
@@ -431,6 +423,12 @@ function client.tickPlayerAR2(p, dt)
 		end
 	end
 	
+	if InputDown("usetool", p) and data.inreload == false and ammo > 0 then
+		data.timeFiring = data.timeFiring + dt
+	else
+		data.timeFiring = 0
+	end
+
 	if data.chargedTime ~= nil then -- deplete timer and check if ready
 		data.chargedTime = data.chargedTime + dt -- increase timer
 		local pitch = (data.chargedTime) * (150 / getFullChargeTime()) + 100
@@ -467,7 +465,7 @@ function client.tickPlayerAR2(p, dt)
 
 			if IsPlayerLocal(p) then
 				ServerCall("server.secondaryFireAR2", p)
-				camSineTime = 0
+
 				PlayHaptic(shootHaptic, 1)
 			end
 
@@ -499,36 +497,6 @@ function client.tickPlayerAR2(p, dt)
 	-- END RECOIL
 	
 	tickToolAnimator(data.toolAnimator, dt, nil, p)
-
-	
-	if IsPlayerLocal(p) then
-		-- CAMERA MOVEMENT
-		if camSineTime ~= nil then
-			local x = camSineTime
-			local balance = -15 -- where the peak is (10 for middle, higher to move left also has to be negative)
-			local amp = 15 -- how intense (y at the peak will not equal this though)
-			
-			local equation = nil
-			if data.camAltMove == true then
-				balance = -20
-				amp = 800
-				equation = amp * ((math.sin(CAMALTMOVETIME * x) * math.exp(balance * x)) * x)
-			else
-				equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
-			end
-
-			if equation >= 0 then
-				local t = 0
-				if data.camAltMove == true then
-					t = Transform(Vec(), QuatAxisAngle(Vec(1.0, -1.0, 0), equation))
-				else
-					t = Transform(Vec(), QuatAxisAngle(Vec(-1.0, 0.5, 0), equation))
-				end
-				SetPlayerCameraOffsetTransform(t)
-				camSineTime = camSineTime + dt
-			else camSineTime = nil end
-		end
-	end
 end
 
 function client.drawAR2()

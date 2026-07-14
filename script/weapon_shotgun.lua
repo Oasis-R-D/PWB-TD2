@@ -18,8 +18,6 @@ local PUMP_SOUND = "MOD/snd/shotgun_cock.ogg"
 local CLIP_SIZE = 6
 local PICKUP_SIZE = 6
 local RECOIL_AMNT = 0.2
-local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRE_TIME) -- Cam movement sine multiplier, FIRERATE is how long until it's over
-local CAMALTMOVETIME = (2 * math.pi) * (0.5 / ALTFIRE_TIME) -- Cam movement sine multiplier, ALTFIRERATE is how long until it's over
 local DAMAGE = 0.35
 local PLAYERDAMAGE = 0.09
 local MAX_RANGE = 60.0
@@ -30,7 +28,7 @@ local CASING_ORG = Vec(0.05, 0.085, 0.2)
 -- Per weapon data storer
 local playerData = {}
 	
-function createPlayerCLIENTdataSG()
+local function createPlayerCLIENTdata()
     return {
 		clipamnt = CLIP_SIZE,
 		inreload = false,
@@ -41,7 +39,6 @@ function createPlayerCLIENTdataSG()
 		shellinserttime = nil,
 		shellstoload = 0,
 		shellstopump = 0.0,
-		camAltMove = false,
 		dataReset = true,
 
 		body = nil,
@@ -106,12 +103,12 @@ end
 function client.initSG()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
-	SetToolHaptic(WPNID, toolHaptic);
+	SetToolHaptic(WPNID, toolHaptic)
 end
 
 function client.tickSG(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataSG();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -123,14 +120,11 @@ function client.tickSG(dt)
 	end
 end
 
-local camSineTime = nil
-local camRecoilY = 0
 local SlideTime = nil
 
 -- in HL2, using the secondary fire with only enough ammo for the primary will fire primary instead.
 -- separated it to it's own function to allow that
 function client.primaryFireSG(p)
-	local pt = GetPlayerTransform(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
 
 	local ammo = GetToolAmmo(WPNID, p)
@@ -144,9 +138,9 @@ function client.primaryFireSG(p)
 	PointLight(mt.pos, 1, 0.7, 0.5, 3)
 	if IsPlayerLocal(p) then
 		ServerCall("server.primaryFireSG", p)
-		camSineTime = 0
-		camRecoilY = rnd(-0.8, 0.8)
-		data.camAltMove = false
+		client.SRC_PunchAxis(1, rnd(1, 2))
+		client.SRC_PunchAxis(2, rnd(-2, 2))
+
 		PlayHaptic(shootHaptic, 1)
 
 		-- shell ejection
@@ -200,26 +194,21 @@ function client.tickPlayerSG(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataSG()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 	
 	if GetPlayerTool(p) ~= WPNID then
-		if IsPlayerLocal(p) then
-			camSineTime = nil
-		end
 		return
 	end
 
-	local pt = GetPlayerTransform(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-
-	local ammo = GetToolAmmo(WPNID, p)
-
 	if mt == nil then
 		return
 	end
+
+	local ammo = GetToolAmmo(WPNID, p)
 	
 	local data = playerData[p]
 
@@ -258,9 +247,8 @@ function client.tickPlayerSG(p, dt)
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 			if IsPlayerLocal(p) then
 				ServerCall("server.secondaryFireSG", p)
-				camSineTime = 0
-				camRecoilY = 0
-				data.camAltMove = true
+				client.SRC_PunchAxis(1, rnd(-5, 5))
+
 				PlayHaptic(shootHaptic, 1)
 
 				-- shell ejection
@@ -322,7 +310,7 @@ function client.tickPlayerSG(p, dt)
 		data.shellinserttime = data.shellinserttime - dt
 		
 		if data.shellinserttime < 0 and data.shellstoload >= 0.5 then
-			PlaySound(LoadSound("MOD/snd/shotgun_reload0.ogg"), pt.pos)
+			PlaySound(LoadSound("MOD/snd/shotgun_reload0.ogg"), mt.pos)
 			data.shellinserttime = RELOAD_TIME
 			data.shellstoload = data.shellstoload - 1
 			data.recoil = 0.1
@@ -340,7 +328,7 @@ function client.tickPlayerSG(p, dt)
 	
 		-- pump the gun
 		if data.pumptime < 0 then
-			PlaySound(LoadSound(PUMP_SOUND), pt.pos)
+			PlaySound(LoadSound(PUMP_SOUND), mt.pos)
 			data.pumptime = nil
 			-- SHELL EJECT
 			if IsPlayerLocal(p) then
@@ -374,28 +362,6 @@ function client.tickPlayerSG(p, dt)
 
 	
 	if IsPlayerLocal(p) then
-		-- CAMERA MOVEMENT
-		if camSineTime ~= nil then
-			local x = camSineTime
-			local balance = -15 -- where the peak is (10 for middle, higher to move left also has to be negative)
-			local amp = 200 -- how intense (y at the peak will not equal this though)
-
-			local equation = nil
-			if data.camAltMove == true then
-				balance = -15
-				amp = 1000
-				equation = amp * ((math.sin(CAMALTMOVETIME * x) * math.exp(balance * x)) * x)
-			else
-				equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
-			end
-
-			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(1.0, camRecoilY, 0), equation))
-				SetPlayerCameraOffsetTransform(t)
-				camSineTime = camSineTime + dt
-			else camSineTime = nil end
-		end
-
 		--Animate Slide
 		local GunBody = GetToolBody(p)
 		if data.body ~= GunBody then

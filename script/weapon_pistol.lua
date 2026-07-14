@@ -16,7 +16,6 @@ local CLIP_SIZE = 18.0
 local PICKUP_SIZE = 18.0
 local RECOIL_AMNT = 0.17
 local FIRERATE = 0.5 -- held down fire rate
-local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, PISTOL_ACCURACY_SHOT_PENALTY_TIME is how long until it's over
 local ALTFIRERATE = 0.2
 local DAMAGE = 0.4
 local PLAYERDAMAGE = 0.08
@@ -28,7 +27,7 @@ local CASING_ORG = Vec(-0.06, 0.2, 0.13)
 -- Per weapon data storer
 local playerData = {}
 
-function createPlayerCLIENTdataPIST9MM()
+local function createPlayerCLIENTdata()
     return {
 		clipamnt = CLIP_SIZE,
 		inreload = false,
@@ -47,7 +46,7 @@ function createPlayerCLIENTdataPIST9MM()
 	}
 end
 
-function createPlayerSERVERdataPIST9MM()
+local function createPlayerSERVERdata()
     return {
 		dataReset = true,
 		coolDown = 0.0,
@@ -64,7 +63,7 @@ function server.tickPIST9MM(dt)
 	for p in PlayersAdded() do
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
-		playerData[p] = createPlayerSERVERdataPIST9MM();
+		playerData[p] = createPlayerSERVERdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -83,7 +82,7 @@ function server.tickPlayerPIST9MM(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerSERVERdataPIST9MM()
+			playerData[p] = createPlayerSERVERdata()
 		end
 		return
 	end
@@ -149,12 +148,12 @@ end
 function client.initPIST9MM()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
-	SetToolHaptic(WPNID, toolHaptic);
+	SetToolHaptic(WPNID, toolHaptic)
 end
 
 function client.tickPIST9MM(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataPIST9MM();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -166,8 +165,6 @@ function client.tickPIST9MM(dt)
 	end
 end
 
-local camSineTime = nil
-local camRecoilY = 0
 local SlideTime = nil
 
 function client.tickPlayerPIST9MM(p, dt)
@@ -177,27 +174,22 @@ function client.tickPlayerPIST9MM(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataPIST9MM()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 	
 	if GetPlayerTool(p) ~= WPNID then
-		if IsPlayerLocal(p) then
-			camSineTime = nil
-		end
 		return
 	end
 
-	local pt = GetPlayerTransform(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-
-	local ammo = GetToolAmmo(WPNID, p)
-
 	if mt == nil then
 		return
 	end
-	
+
+	local ammo = GetToolAmmo(WPNID, p)
+
 	local data = playerData[p]
 
 	-- make data reset when reset conditions are met
@@ -205,7 +197,7 @@ function client.tickPlayerPIST9MM(p, dt)
 
 	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamnt < CLIP_SIZE and ammo > 0.5 and data.clipamnt ~= ammo then
-		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+		PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
 		if data.clipamnt > 0 then
 			data.NextPrimaryAttack = GetTime() + RELOAD_TIME
 		end
@@ -229,9 +221,13 @@ function client.tickPlayerPIST9MM(p, dt)
 			if IsPlayerLocal(p) then
 				data.firesound = PlaySound(LoadSound(PRIM_FIRESOUND), mt.pos, 300)
 				ServerCall("server.primaryFirePIST9MM", p)
-				camSineTime = 0
-				camRecoilY = rnd(-1, 1)
+
+				client.SRC_PunchReset()
+				client.SRC_PunchAxis(1, rnd(-0.25, -0.5))
+				client.SRC_PunchAxis(2, rnd(-0.6, 0.6))
+
 				SlideTime = 0
+
 				PlayHaptic(shootHaptic, 1)
 
 				-- shell ejection
@@ -261,7 +257,7 @@ function client.tickPlayerPIST9MM(p, dt)
 			if data.clipamnt > 0 then
 				data.NextPrimaryAttack = GetTime() + FIRERATE
 			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
 				data.NextPrimaryAttack = GetTime() + RELOAD_TIME
 				data.inreload = true
 			else
@@ -299,21 +295,6 @@ function client.tickPlayerPIST9MM(p, dt)
 	tickToolAnimator(data.toolAnimator, dt, nil, p)
 
 	if IsPlayerLocal(p) then
-		-- CAMERA MOVEMENT
-		if camSineTime ~= nil then
-			local x = camSineTime
-			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be negative)
-			local amp = 30 -- how intense (y at the peak will not equal this though)
-
-			local equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
-
-			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(-1.0, camRecoilY, 0), equation))
-				SetPlayerCameraOffsetTransform(t)
-				camSineTime = camSineTime + dt
-			else camSineTime = nil end
-		end
-
 		--Animate Slide
 		local GunBody = GetToolBody(p)
 		if data.body ~= GunBody then

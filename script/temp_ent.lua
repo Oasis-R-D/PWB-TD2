@@ -58,191 +58,193 @@ function HUD_TempEntUpdate_(
 
     for i = 1, gpTempEnts_Length do
 		local pTemp = gpTempEnts[i] -- this errors sometimes, seemingly when one is deleted?
-		local active = true
+		if pTemp ~= nil then
+			local active = true
 
-		local life = pTemp.die - client_time
-		if life < 0 then
-			if hasFlag(pTemp.flags, FTENT_FADEOUT) then
-				--[[
-				if pTemp.entity.curstate.rendermode == kRenderNormal then
-					pTemp.entity.curstate.rendermode = kRenderTransTexture end
-				pTemp.entity.curstate.renderamt = pTemp.entity.fadeStartIntensity * (1 + life * pTemp.fadeSpeed)
-				if pTemp.entity.curstate.renderamt <= 0 then
+			local life = pTemp.die - client_time
+			if life < 0 then
+				if hasFlag(pTemp.flags, FTENT_FADEOUT) then
+					--[[
+					if pTemp.entity.curstate.rendermode == kRenderNormal then
+						pTemp.entity.curstate.rendermode = kRenderTransTexture end
+					pTemp.entity.curstate.renderamt = pTemp.entity.fadeStartIntensity * (1 + life * pTemp.fadeSpeed)
+					if pTemp.entity.curstate.renderamt <= 0 then
+						active = false
+					end]]
+				else
 					active = false
-				end]]
+				end
+			end
+			if active == false then -- Kill it
+				Delete(pTemp.entity.model)
+				table.remove(gpTempEnts, i)
 			else
-				active = false
-			end
-		end
-		if active == false then -- Kill it
-			Delete(pTemp.entity.model)
-			table.remove(gpTempEnts, i)
-		else
-			pTemp.entity.prevOrigin = pTemp.entity.origin
+				pTemp.entity.prevOrigin = pTemp.entity.origin
 
-			if hasFlag(pTemp.flags, FTENT_SPARKSHOWER) then -- NOTE: could be useful?
-				-- Adjust speed if it's time
-				if client_time > pTemp.entity.nextThink then
-					-- Show Sparks
-					for j=1,8 do
-						ParticleReset()
-						ParticleCollide(1)
-						ParticleRadius(0.02, 0)
-						ParticleGravity(-10)
-						ParticleEmissive(5)
-						ParticleStretch(5)
-						ParticleTile(4)
-						ParticleColor(1,0.5,0.4, 1,0.25,0)
-						SpawnParticle(pTemp.entity.origin, rndVec(5.08), rnd(0.1, 0.5))
-					end
+				if hasFlag(pTemp.flags, FTENT_SPARKSHOWER) then -- NOTE: could be useful?
+					-- Adjust speed if it's time
+					if client_time > pTemp.entity.nextThink then
+						-- Show Sparks
+						for j=1,8 do
+							ParticleReset()
+							ParticleCollide(1)
+							ParticleRadius(0.02, 0)
+							ParticleGravity(-10)
+							ParticleEmissive(5)
+							ParticleStretch(5)
+							ParticleTile(4)
+							ParticleColor(1,0.5,0.4, 1,0.25,0)
+							SpawnParticle(pTemp.entity.origin, rndVec(5.08), rnd(0.1, 0.5))
+						end
 
-					-- Reduce life
-					pTemp.entity.spark_lifetime = pTemp.entity.spark_lifetime - 0.1
+						-- Reduce life
+						pTemp.entity.spark_lifetime = pTemp.entity.spark_lifetime - 0.1
 
-					if pTemp.entity.spark_lifetime <= 0.0 then
-						pTemp.die = client_time
-					else
-						-- So it will die no matter what
-						pTemp.die = client_time + 0.5
+						if pTemp.entity.spark_lifetime <= 0.0 then
+							pTemp.die = client_time
+						else
+							-- So it will die no matter what
+							pTemp.die = client_time + 0.5
 
-						-- Next think
-						pTemp.entity.nextThink = client_time + 0.1
-					end
-				end
-			else -- apply velocity
-				for j = 1, 3 do
-					pTemp.entity.origin[j] = pTemp.entity.origin[j] + (pTemp.entity.velocity[j] * frametime)
-				end
-			end
-
-			--[[ -- no sprites in teardown!
-			if hasFlag(pTemp.flags, FTENT_SPRANIMATE) then
-				pTemp.entity.curstate.frame = pTemp.entity.curstate.frame + (frametime * pTemp.entity.curstate.framerate)
-				if pTemp.entity.curstate.frame >= pTemp.frameMax then
-					pTemp.entity.curstate.frame = pTemp.entity.curstate.frame - (int)(pTemp.entity.curstate.frame)
-
-					if not hasFlag(pTemp.flags, FTENT_SPRANIMATELOOP) then
-						-- this animating sprite isn't set to loop, so destroy it.
-						pTemp.die = client_time
-						continue
-					end
-				end
-			elseif hasFlag(pTemp.flags, FTENT_SPRCYCLE) then
-				pTemp.entity.curstate.frame = pTemp.entity.curstate.frame + (frametime * 10)
-				if pTemp.entity.curstate.frame >= pTemp.frameMax then
-					pTemp.entity.curstate.frame = pTemp.entity.curstate.frame - (int)(pTemp.entity.curstate.frame)
-				end
-			end
-			]]
-
-			if hasFlag(pTemp.flags, FTENT_ROTATE) then
-				for j = 1, 3 do
-					pTemp.entity.angles[j] = pTemp.entity.angles[j] + pTemp.entity.angleVel[j] * frametime
-				end
-			end
-
-			local gravity = -frametime * cl_gravity
-
-			if hasFlags_OR(pTemp.flags, FTENT_COLLIDEALL, FTENT_COLLIDEWORLD) then
-				local betweenDir = VecNormalize(pTemp.entity.velocity)
-				local betweenLen = VecLength(pTemp.entity.velocity) * frametime
-
-				if hasFlag(pTemp.flags, FTENT_COLLIDEALL) then
-					QueryInclude("player")
-					QueryInclude("animator")
-				end
-
-				QueryRequire("visible physical")
-				local hit, dist, traceNormal = QueryRaycast(pTemp.entity.prevOrigin, betweenDir, betweenLen, 0.02)
-				
-				if hit == true then
-					if hasFlag(pTemp.flags, FTENT_SPARKSHOWER) then
-						-- Chop spark speeds a bit more
-						--
-						pTemp.entity.velocity = VecScale(pTemp.entity.velocity, 0.6)
-
-						if VecLength(pTemp.entity.velocity) < 0.254 then
-							pTemp.entity.spark_lifetime = 0.0
+							-- Next think
+							pTemp.entity.nextThink = client_time + 0.1
 						end
 					end
+				else -- apply velocity
+					for j = 1, 3 do
+						pTemp.entity.origin[j] = pTemp.entity.origin[j] + (pTemp.entity.velocity[j] * frametime)
+					end
+				end
 
-					local proj, damp
+				--[[ -- no sprites in teardown!
+				if hasFlag(pTemp.flags, FTENT_SPRANIMATE) then
+					pTemp.entity.curstate.frame = pTemp.entity.curstate.frame + (frametime * pTemp.entity.curstate.framerate)
+					if pTemp.entity.curstate.frame >= pTemp.frameMax then
+						pTemp.entity.curstate.frame = pTemp.entity.curstate.frame - (int)(pTemp.entity.curstate.frame)
 
-					-- Place at contact point
-					--VectorMA(pTemp.entity.prevOrigin, traceFraction * frametime, pTemp.entity.velocity, pTemp.entity.origin)
-					pTemp.entity.origin = VecAdd(pTemp.entity.prevOrigin, VecScale(betweenDir, dist))
-					pTemp.entity.origin = VecAdd(pTemp.entity.origin, VecScale(traceNormal, 0.01))
+						if not hasFlag(pTemp.flags, FTENT_SPRANIMATELOOP) then
+							-- this animating sprite isn't set to loop, so destroy it.
+							pTemp.die = client_time
+							continue
+						end
+					end
+				elseif hasFlag(pTemp.flags, FTENT_SPRCYCLE) then
+					pTemp.entity.curstate.frame = pTemp.entity.curstate.frame + (frametime * 10)
+					if pTemp.entity.curstate.frame >= pTemp.frameMax then
+						pTemp.entity.curstate.frame = pTemp.entity.curstate.frame - (int)(pTemp.entity.curstate.frame)
+					end
+				end
+				]]
 
-					-- Damp velocity
-					damp = pTemp.bounceFactor
-					if hasFlags_OR(pTemp.flags, FTENT_GRAVITY, FTENT_SLOWGRAVITY) ~= 0 then
-						damp = damp * 0.5
-						if traceNormal[2] > 0.9 then -- Hit floor?
-							if pTemp.entity.velocity[2] <= 0 and pTemp.entity.velocity[2] >= gravity * 2 then
-								damp = 0 -- Stop
-								pTemp.flags = clearFlags(pTemp.flags, FTENT_ROTATE, FTENT_GRAVITY, FTENT_SLOWGRAVITY, FTENT_COLLIDEWORLD, FTENT_SMOKETRAIL)
-								pTemp.entity.angles[1] = 0
-								--pTemp.entity.angles[2] = 0
+				if hasFlag(pTemp.flags, FTENT_ROTATE) then
+					for j = 1, 3 do
+						pTemp.entity.angles[j] = pTemp.entity.angles[j] + pTemp.entity.angleVel[j] * frametime
+					end
+				end
+
+				local gravity = -frametime * cl_gravity
+
+				if hasFlags_OR(pTemp.flags, FTENT_COLLIDEALL, FTENT_COLLIDEWORLD) then
+					local betweenDir = VecNormalize(pTemp.entity.velocity)
+					local betweenLen = VecLength(pTemp.entity.velocity) * frametime
+
+					if hasFlag(pTemp.flags, FTENT_COLLIDEALL) then
+						QueryInclude("player")
+						QueryInclude("animator")
+					end
+
+					QueryRequire("visible physical")
+					local hit, dist, traceNormal = QueryRaycast(pTemp.entity.prevOrigin, betweenDir, betweenLen, 0.02)
+					
+					if hit == true then
+						if hasFlag(pTemp.flags, FTENT_SPARKSHOWER) then
+							-- Chop spark speeds a bit more
+							--
+							pTemp.entity.velocity = VecScale(pTemp.entity.velocity, 0.6)
+
+							if VecLength(pTemp.entity.velocity) < 0.254 then
+								pTemp.entity.spark_lifetime = 0.0
+							end
+						end
+
+						local proj, damp
+
+						-- Place at contact point
+						--VectorMA(pTemp.entity.prevOrigin, traceFraction * frametime, pTemp.entity.velocity, pTemp.entity.origin)
+						pTemp.entity.origin = VecAdd(pTemp.entity.prevOrigin, VecScale(betweenDir, dist))
+						pTemp.entity.origin = VecAdd(pTemp.entity.origin, VecScale(traceNormal, 0.01))
+
+						-- Damp velocity
+						damp = pTemp.bounceFactor
+						if hasFlags_OR(pTemp.flags, FTENT_GRAVITY, FTENT_SLOWGRAVITY) ~= 0 then
+							damp = damp * 0.5
+							if traceNormal[2] > 0.9 then -- Hit floor?
+								if pTemp.entity.velocity[2] <= 0 and pTemp.entity.velocity[2] >= gravity * 2 then
+									damp = 0 -- Stop
+									pTemp.flags = clearFlags(pTemp.flags, FTENT_ROTATE, FTENT_GRAVITY, FTENT_SLOWGRAVITY, FTENT_COLLIDEWORLD, FTENT_SMOKETRAIL)
+									pTemp.entity.angles[1] = 0
+									--pTemp.entity.angles[2] = 0
+								end
+							end
+						end
+
+						if damp > 0 and betweenLen / frametime > 1 and pTemp.hitSound ~= FSFX_NONE then
+							--CL_TempEntPlaySound(pTemp, damp)
+							local sound = ""
+
+							if hasFlag(pTemp.hitSound, FSFX_BRASS) then
+								sound = "MOD/snd/bounce_brass0.ogg"
+							elseif hasFlag(pTemp.hitSound, FSFX_SHTGN) then
+								sound = "MOD/snd/bounce_shell0.ogg"
+							end
+
+							PlaySound(LoadSound(sound), pTemp.entity.origin, damp / 2)
+						end
+
+						if hasFlag(pTemp.flags, FTENT_COLLIDEKILL) then
+							-- die on impact
+							pTemp.flags = clearFlag(pTemp.flags, FTENT_FADEOUT)
+							pTemp.die = client_time
+						else
+							-- Reflect velocity
+							if damp ~= 0 then
+								proj = VecDot(pTemp.entity.velocity, traceNormal)
+								--VectorMA(pTemp.entity.velocity, -proj * 2, traceNormal, pTemp.entity.velocity)
+								pTemp.entity.velocity = VecAdd(pTemp.entity.velocity, VecScale(traceNormal, -proj * 2))
+
+								-- Reflect rotation (fake)
+								pTemp.entity.angles[2] = -pTemp.entity.angles[2] -- axis 2 seems to be correct (instead of 3)
+							end
+
+							if damp ~= 1 then
+								pTemp.entity.velocity = VecScale(pTemp.entity.velocity, damp)
+								pTemp.entity.angles = VecScale(pTemp.entity.angles, 0.9)
 							end
 						end
 					end
+				end
 
-					if damp > 0 and betweenLen / frametime > 1 and pTemp.hitSound ~= FSFX_NONE then
-						--CL_TempEntPlaySound(pTemp, damp)
-						local sound = ""
+				if hasFlag(pTemp.flags, FTENT_GRAVITY) then
+					pTemp.entity.velocity[2] = pTemp.entity.velocity[2] + gravity
 
-						if hasFlag(pTemp.hitSound, FSFX_BRASS) then
-							sound = "MOD/snd/bounce_brass0.ogg"
-						elseif hasFlag(pTemp.hitSound, FSFX_SHTGN) then
-							sound = "MOD/snd/bounce_shell0.ogg"
-						end
+					if hasFlag(pTemp.flags, FTENT_BUOYANT) then -- Post-Human addition
+						if IsPointInWater(pTemp.entity.origin) == true then
+							pTemp.entity.velocity[2] = pTemp.entity.velocity[2] - gravity
 
-						PlaySound(LoadSound(sound), pTemp.entity.origin, damp / 2)
-					end
+							pTemp.entity.velocity = VecScale(pTemp.entity.velocity, 0.98)
+							pTemp.entity.angles = VecScale(pTemp.entity.angles, 0.98)
 
-					if hasFlag(pTemp.flags, FTENT_COLLIDEKILL) then
-						-- die on impact
-						pTemp.flags = clearFlag(pTemp.flags, FTENT_FADEOUT)
-						pTemp.die = client_time
-					else
-						-- Reflect velocity
-						if damp ~= 0 then
-							proj = VecDot(pTemp.entity.velocity, traceNormal)
-							--VectorMA(pTemp.entity.velocity, -proj * 2, traceNormal, pTemp.entity.velocity)
-							pTemp.entity.velocity = VecAdd(pTemp.entity.velocity, VecScale(traceNormal, -proj * 2))
+							if pTemp.entity.velocity[2] < 0 then
+								pTemp.entity.velocity[2] = pTemp.entity.velocity[2] * 0.95
+							end
 
-							-- Reflect rotation (fake)
-							pTemp.entity.angles[2] = -pTemp.entity.angles[2] -- axis 2 seems to be correct (instead of 3)
-						end
-
-						if damp ~= 1 then
-							pTemp.entity.velocity = VecScale(pTemp.entity.velocity, damp)
-							pTemp.entity.angles = VecScale(pTemp.entity.angles, 0.9)
+							pTemp.entity.velocity[2] = pTemp.entity.velocity[2] + ((math.sin(3 * GetTime()) * 0.00127) + 0.0127)
 						end
 					end
 				end
+
+				SetBodyTransform(pTemp.entity.model, Transform(pTemp.entity.origin, QuatEuler(pTemp.entity.angles[1], pTemp.entity.angles[2], pTemp.entity.angles[3])))
 			end
-
-			if hasFlag(pTemp.flags, FTENT_GRAVITY) then
-				pTemp.entity.velocity[2] = pTemp.entity.velocity[2] + gravity
-
-				if hasFlag(pTemp.flags, FTENT_BUOYANT) then -- Post-Human addition
-					if IsPointInWater(pTemp.entity.origin) == true then
-						pTemp.entity.velocity[2] = pTemp.entity.velocity[2] - gravity
-
-						pTemp.entity.velocity = VecScale(pTemp.entity.velocity, 0.98)
-						pTemp.entity.angles = VecScale(pTemp.entity.angles, 0.98)
-
-						if pTemp.entity.velocity[2] < 0 then
-							pTemp.entity.velocity[2] = pTemp.entity.velocity[2] * 0.95
-						end
-
-						pTemp.entity.velocity[2] = pTemp.entity.velocity[2] + ((math.sin(3 * GetTime()) * 0.00127) + 0.0127)
-					end
-				end
-			end
-
-			SetBodyTransform(pTemp.entity.model, Transform(pTemp.entity.origin, QuatEuler(pTemp.entity.angles[1], pTemp.entity.angles[2], pTemp.entity.angles[3])))
 		end
 	end
 end

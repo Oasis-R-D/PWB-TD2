@@ -13,7 +13,7 @@ local THROW_SOUND = "MOD/snd/slam_throw.ogg"
 -- Per weapon data storer
 local playerData = {}
 
-function createPlayerCLIENTdataFRAG()
+local function createPlayerCLIENTdata()
 	return {
 		inAttack = false,
 		inAltAttack = false,
@@ -136,7 +136,7 @@ end
 
 function client.tickFRAG(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataFRAG();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -153,14 +153,14 @@ function client.tickPlayerFRAG(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataFRAG()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 	
 	if GetPlayerTool(p) ~= WPNID then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataFRAG()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end

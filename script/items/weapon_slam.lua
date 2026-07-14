@@ -13,7 +13,7 @@ local PLACE_SOUND = "MOD/snd/slam_place.ogg"
 -- Per weapon data storer
 local playerData = {}
 
-function createPlayerCLIENTdataSLAM()
+local function createPlayerCLIENTdata()
 	return {
 		coolDown = 0.0,
 		recoil = 0.0,
@@ -22,7 +22,7 @@ function createPlayerCLIENTdataSLAM()
 	}
 end
 
-function createPlayerSERVERdataSLAM()
+local function createPlayerSERVERdata()
 	return {
 		satchelBodies = {},
 		dataReset = true,
@@ -36,7 +36,7 @@ end
 
 function server.tickSLAM(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerSERVERdataSLAM()
+		playerData[p] = createPlayerSERVERdata()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 5, p)
 	end
@@ -55,7 +55,7 @@ function server.tickPlayerSLAM(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerSERVERdataSLAM()
+			playerData[p] = createPlayerSERVERdata()
 		end
 		return
 	end
@@ -135,7 +135,7 @@ end
 
 function client.tickSLAM(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataSLAM();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -152,14 +152,14 @@ function client.tickPlayerSLAM(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataSLAM()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 	
 	if GetPlayerTool(p) ~= WPNID then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataSLAM()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end

@@ -10,9 +10,7 @@ local CLIP_SIZE = 45
 local PICKUP_SIZE = 45
 local RECOIL_AMNT = 0.1
 local FIRERATE = 0.075
-local CAMMOVETIME = (2 * math.pi) * (0.5 / FIRERATE) -- Cam movement sine multiplier, FIRERATE is how long until it's over
 local ALTFIRERATE = 1
-local CAMALTMOVETIME = (2 * math.pi) * (0.5 / ALTFIRERATE) -- Cam movement sine multiplier, ALTFIRERATE is how long until it's over
 local DAMAGE = 0.4
 local PLAYERDAMAGE = 0.05
 local MAX_RANGE = 100.0
@@ -23,7 +21,7 @@ local CASING_ORG = Vec(0.02, 0.15, -0.15)
 -- Per weapon data storer
 local playerData = {}
 
-function createPlayerCLIENTdataSMG1()
+local function createPlayerCLIENTdata()
     return {
 		clipamnt = CLIP_SIZE,
 		m203amnt = 1,
@@ -32,12 +30,12 @@ function createPlayerCLIENTdataSMG1()
 		altCoolDown = 0.0,
 		recoil = 0.0,
 		toolAnimator = ToolAnimator(),
-		camAltMove = false,
+		timeFiring = 0.0,
 		dataReset = true,
 	}
 end
 
-function createPlayerSERVERdataSMG1()
+local function createPlayerSERVERdata()
     return {
 		firesound = nil,
 	}
@@ -50,7 +48,7 @@ end
 
 function server.tickSMG1(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataSMG1()
+		playerData[p] = createPlayerCLIENTdata()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 250, p)
 	end
@@ -106,12 +104,12 @@ end
 function client.initSMG1()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
-	SetToolHaptic(WPNID, toolHaptic);
+	SetToolHaptic(WPNID, toolHaptic)
 end
 
 function client.tickSMG1(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataSMG1();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -123,35 +121,26 @@ function client.tickSMG1(dt)
 	end
 end
 
-local camSineTime = nil
-local camRecoilY = 0
-local camRecoilX = 0
-
 function client.tickPlayerSMG1(p, dt)
 	if not IsToolEnabled(WPNID, p) then return end
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataSMG1()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		if IsPlayerLocal(p) then
-			camSineTime = nil
-		end
 		return
 	end
 
-	local pt = GetPlayerTransform(p)
 	local mt = GetToolLocationWorldTransform("muzzle", p)
-
-	local ammo = GetToolAmmo(WPNID, p)
-
 	if mt == nil then
 		return
 	end
+
+	local ammo = GetToolAmmo(WPNID, p)
 
 	local data = playerData[p]
 
@@ -160,7 +149,7 @@ function client.tickPlayerSMG1(p, dt)
 
 	-- Start Reload
 	if InputPressed("r", p) and data.inreload == false and data.clipamnt < CLIP_SIZE and ammo > 0.5 and data.clipamnt ~= ammo then
-		PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+		PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
 		data.coolDown = RELOAD_TIME
 		data.inreload = true
 	-- Finish Reload
@@ -177,10 +166,9 @@ function client.tickPlayerSMG1(p, dt)
 
 			if IsPlayerLocal(p) then
 				ServerCall("server.primaryFireSMG1", p)
-				camSineTime = 0
-				camRecoilY = rnd(-1, 1)
-				camRecoilX = rnd(-1, 1)
-				data.camAltMove = false
+
+				client.DoMachineGunKick(1, data.timeFiring, 2)
+
 				PlayHaptic(shootHaptic, 1)
 
 				-- shell ejection
@@ -208,12 +196,12 @@ function client.tickPlayerSMG1(p, dt)
 				data.coolDown = FIRERATE
 				data.altCoolDown = FIRERATE
 			elseif ammo > 1 then
-				PlaySound(LoadSound(RELOAD_SOUND), pt.pos)
+				PlaySound(LoadSound(RELOAD_SOUND), mt.pos)
 				data.coolDown = RELOAD_TIME
 				data.altCoolDown = RELOAD_TIME
 				data.inreload = true
 			end
-			
+
 			data.recoil = RECOIL_AMNT
 		end
 	-- Check Altfire
@@ -222,10 +210,7 @@ function client.tickPlayerSMG1(p, dt)
 			PointLight(mt.pos, 1, 0.7, 0.5, 3)
 			if IsPlayerLocal(p) then
 				ServerCall("server.secondaryFireSMG1", p)
-				camSineTime = 0
-				camRecoilY = 0
-				camRecoilX = 1
-				data.camAltMove = true
+
 				PlayHaptic(shootHaptic, 1)
 			end
 			
@@ -259,6 +244,12 @@ function client.tickPlayerSMG1(p, dt)
 		end
 	end
 	
+	if InputDown("usetool", p) and data.inreload == false and ammo > 0 then
+		data.timeFiring = data.timeFiring + dt
+	else
+		data.timeFiring = 0
+	end
+
 	-- decrease firing cooldown and recoil
 	data.coolDown = data.coolDown - dt
 	data.altCoolDown = data.altCoolDown - dt
@@ -266,7 +257,7 @@ function client.tickPlayerSMG1(p, dt)
 	
 	-- RECOIL
 	if data.recoil > -0.5 then
-		local recoil = math.max(0, data.recoil)
+		local recoil = 0.33 * math.max(0, data.recoil)
 		local siderecoil = recoil * 0.25
 		local recoilvert = math.max(0, data.recoil)
 		
@@ -276,36 +267,11 @@ function client.tickPlayerSMG1(p, dt)
 		end
 
 		-- QUATEULER: (x, y, z) X is tilting barrel upwards, Y tilts it left/right, Z rotates it
-		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert), QuatEuler(recoil * 50, 0, recoil * -15))
+		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert*2), QuatEuler(recoilvert * 50, 0, recoilvert * -15))
 	end 
 	-- END RECOIL
 	
 	tickToolAnimator(data.toolAnimator, dt, nil, p)
-
-	
-	if IsPlayerLocal(p) then
-		-- CAMERA MOVEMENT
-		if camSineTime ~= nil then
-			local x = camSineTime
-			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be negative)
-			local amp = 25 -- how intense (y at the peak will not equal this though)
-
-			local equation = nil
-			if data.camAltMove == true then
-				balance = -15
-				amp = 800
-				equation = amp * ((math.sin(CAMALTMOVETIME * x) * math.exp(balance * x)) * x)
-			else
-				equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
-			end
-
-			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(camRecoilX, camRecoilY, 0), equation))
-				SetPlayerCameraOffsetTransform(t)
-				camSineTime = camSineTime + dt
-			else camSineTime = nil end
-		end
-	end
 end
 
 function client.drawSMG1()

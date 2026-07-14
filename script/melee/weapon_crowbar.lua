@@ -8,12 +8,11 @@ local MAX_RANGE = 2 -- less range in HL2
 local WPNID = "hl2crowbar"
 local WPNNAME = "Crowbar"
 local COOLDOWN = 0.4
-local CAMMOVETIME = (2 * math.pi) * (0.5 / COOLDOWN) -- Cam movement sine multiplier, COOLDOWN is how long until it's over
 
 -- Per weapon data storer
 local playerData = {}
 
-function createPlayerCLIENTdataCRBR()
+local function createPlayerCLIENTdata()
     return {
 		coolDown = 0.0,
 		recoil = 0.0,
@@ -24,7 +23,7 @@ function createPlayerCLIENTdataCRBR()
 	}
 end
 
-function createPlayerSERVERdataCRBR()
+local function createPlayerSERVERdata()
     return {
 		coolDown = 0.0,
 		dataReset = true,
@@ -38,7 +37,7 @@ end
 
 function server.tickCRBR(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerSERVERdataCRBR()
+		playerData[p] = createPlayerSERVERdata()
 		SetToolEnabled(WPNID, true, p)
 		SetToolAmmo(WPNID, 99999, p)
 	end
@@ -96,10 +95,6 @@ function server.swingCRBR(m_pPlayer, dt) -- HL1 uses m_pPlayer (use it here for 
 	end
 end
 
-local camSineTime = nil
-local camRecoilY = 0
-local camRecoilX = 0
-
 function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
 	local data = playerData[m_pPlayer]
 	local vecSrc = GetPlayerEyeTransform(m_pPlayer)
@@ -109,21 +104,15 @@ function client.swingCRBR(m_pPlayer, dt, hit, pos, pHitPlayer, pHitWorld)
 
 	data.coolDown = COOLDOWN
 
+	if IsPlayerLocal(m_pPlayer) then
+		client.SRC_PunchAxis(1, rnd(-1, -2))
+		client.SRC_PunchAxis(2, rnd(2, 1))
+	end
+
 	if hit == false then
 		-- Miss
 		data.toolAnimator.maxActionPoseTime = 0.1 -- stop midswing but further in
-		if IsPlayerLocal(m_pPlayer) then
-			camSineTime = 0
-			camRecoilX = rnd( 0.125,  0.25)
-			camRecoilY = rnd(-0.125, -0.25)
-		end
 	else
-		if IsPlayerLocal(m_pPlayer) then
-			camSineTime = 0
-			camRecoilX = rnd( 0.5,  1)
-			camRecoilY = rnd(-0.5, -1)
-		end
-
 		if pHitPlayer ~= 0 then
 			PlaySound(LoadSound("MOD/snd/bullet_hit0.ogg"), pos, 0.5)
 		end
@@ -139,14 +128,14 @@ function server.tickPlayerCRBR(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 and playerData[p].dataReset == false then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerSERVERdataCRBR()
+			playerData[p] = createPlayerSERVERdata()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID and playerData[p].dataReset == false then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerSERVERdataCRBR()
+			playerData[p] = createPlayerSERVERdata()
 		end
 		return
 	end
@@ -168,12 +157,12 @@ end
 function client.initCRBR()
 	shootHaptic = LoadHaptic("MOD/haptic/gun_fire.xml")
 	local toolHaptic = LoadHaptic("MOD/haptic/background.xml")
-	SetToolHaptic(WPNID, toolHaptic);
+	SetToolHaptic(WPNID, toolHaptic)
 end
 
 function client.tickCRBR(dt)
 	for p in PlayersAdded() do
-		playerData[p] = createPlayerCLIENTdataCRBR();
+		playerData[p] = createPlayerCLIENTdata()
 	end
 
 	for p in PlayersRemoved() do
@@ -190,22 +179,17 @@ function client.tickPlayerCRBR(p, dt)
 	
 	if GetPlayerHealth(p) <= 0 then
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataCRBR()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
 
 	if GetPlayerTool(p) ~= WPNID then
-		if IsPlayerLocal(p) then
-			camSineTime = nil
-		end
 		if playerData[p].dataReset == false then
-			playerData[p] = createPlayerCLIENTdataCRBR()
+			playerData[p] = createPlayerCLIENTdata()
 		end
 		return
 	end
-
-	local pt = GetPlayerTransform(p)
 
 	local data = playerData[p]
 
@@ -245,23 +229,6 @@ function client.tickPlayerCRBR(p, dt)
 		data.toolAnimator.offsetTransform = Transform(Vec(siderecoil,recoil,recoilvert))
 	end 
 	-- END RECOIL
-	
-	if IsPlayerLocal(p) then
-		-- CAMERA MOVEMENT
-		if camSineTime ~= nil then
-			local x = camSineTime
-			local balance = -10 -- where the peak is (10 for middle, higher to move left also has to be negative)
-			local amp = 100 -- how intense (y at the peak will not equal this though)
-
-			local equation = amp * ((math.sin(CAMMOVETIME * x) * math.exp(balance * x)) * x)
-
-			if equation >= 0 then
-				local t = Transform(Vec(), QuatAxisAngle(Vec(camRecoilX, camRecoilY, 0), equation))
-				SetPlayerCameraOffsetTransform(t)
-				camSineTime = camSineTime + dt
-			else camSineTime = nil end
-		end
-	end
 
 	tickToolAnimator(data.toolAnimator, dt, nil, p, 6, true)
 end
