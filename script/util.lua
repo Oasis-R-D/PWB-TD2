@@ -383,23 +383,17 @@ end
 -- Weapon UTILs
 ----------------------------------------------------------------------------------------------
 
-function muzzleFlash(pos, amount, minrad, maxrad, endrad, life)
-	life = life or 0.125
+-- TO-DO: add firer's velocity?
+local MUZZLEFLASH_SPRITE = false
+function muzzleFlash(pos, size, color)
+	color = color or Vec(1, 1, 1)
+	local t = Transform(pos)
+	t.rot = GetCameraTransform().rot
 
-	for i=1, amount do
-		ParticleReset()
-		ParticleGravity(0)
-		ParticleRadius(rnd(minrad, maxrad), endrad)
-		ParticleAlpha(1, 0)
-		ParticleTile(5)
-		ParticleDrag(0)
-		ParticleRotation(rnd(10, -10), 0)
-		ParticleSticky(0)
-		ParticleEmissive(5, 1)
-		ParticleCollide(0)
-		ParticleColor(1,0.35,0, 1,0,0)
-		SpawnParticle(pos, Vec(0,0,0), life) -- to-do: add player vel
-	end
+	if not MUZZLEFLASH_SPRITE then MUZZLEFLASH_SPRITE = LoadSprite("gfx/glare.png") end
+
+	local spriteSize = size * 0.4
+	DrawSprite(MUZZLEFLASH_SPRITE, t, spriteSize, spriteSize, color[1], color[2], color[3], 1.0, true, true, true)
 end
 
 function canFire(p, ammo, clip, cooldown)

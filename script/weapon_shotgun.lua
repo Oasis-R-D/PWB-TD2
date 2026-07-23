@@ -150,7 +150,7 @@ function client.primaryFireSG(p)
 	local toolBody = GetToolBody(p)
 	local playervel = GetPlayerVelocity(p)
 	
-	muzzleFlash(mt.pos, 4, 0.1, 0.15, 0.33)
+	muzzleFlash(mt.pos, 5)
 		
 	data.clipamnt = data.clipamnt - 1
 	if data.clipamnt > 0 then
@@ -240,7 +240,7 @@ function client.tickPlayerSG(p, dt)
 
 		local playervel = GetPlayerVelocity(p)
 		
-		muzzleFlash(mt.pos, 5, 0.15, 0.2, 0.44)
+		muzzleFlash(mt.pos, 7)
 
 		data.toolAnimator.timeSinceFire = 0.0 -- hold the gun straight
 		

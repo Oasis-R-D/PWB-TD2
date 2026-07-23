@@ -385,21 +385,7 @@ function client.tickPlayerAR2(p, dt)
 			PlayHaptic(shootHaptic, 1)
 		end
 
-		-- muzzleflash
-		for i=0, 3 do
-			ParticleReset()
-			ParticleGravity(0)
-			ParticleRadius(rnd(0.12, 0.17), 0.33)
-			ParticleAlpha(1, 0)
-			ParticleTile(5)
-			ParticleDrag(0)
-			ParticleRotation(rnd(10, -10), 0)
-			ParticleSticky(0)
-			ParticleEmissive(5, 1)
-			ParticleCollide(0)
-			ParticleColor(0,0.35,1, 1,0.35,0)
-			SpawnParticle(mt.pos, playervel, 0.125)
-		end
+		muzzleFlash(mt.pos, 4, Vec(0,0.35,1))
 		
 		data.clipamnt = data.clipamnt - 1
 		if data.clipamnt > 0 then
@@ -439,18 +425,7 @@ function client.tickPlayerAR2(p, dt)
 		
 		local playervel = GetPlayerVelocity(p)
 		-- muzzleflash
-		ParticleReset()
-		ParticleGravity(0)
-		ParticleRadius(0.1 + (data.chargedTime / 2))
-		ParticleAlpha(1, 0)
-		ParticleTile(1)
-		ParticleDrag(0)
-		ParticleRotation(rnd(10, -10), 0)
-		ParticleSticky(0)
-		ParticleEmissive(5, 1)
-		ParticleCollide(0)
-		ParticleColor(0,0.35,1, 1,0.35,0)
-		SpawnParticle(mt.pos, playervel, 0.125)
+		muzzleFlash(mt.pos, 15 * data.chargedTime, Vec(0.2,0.6,1))
 	
 		if data.chargedTime >= 0.5 then
 			SetSoundLoopProgress(spinLoop, 0.0)

@@ -260,7 +260,6 @@ function client.tickPlayerCROSS(p, dt)
 
 	-- Check Fire
 	if InputDown("usetool", p) and canFire(p, ammo, ammo, data.coolDown) and data.hasBolt == true then -- not a good idea to use hasbolt here, only way to prevent THE BUG
-		PointLight(mt.pos, 1, 0.7, 0.5, 3)
 		if IsPlayerLocal(p) then
 			ServerCall("server.primaryFireCROSS", p)
 			client.SRC_PunchAxis(1, 2)
@@ -301,7 +300,8 @@ function client.tickPlayerCROSS(p, dt)
 	data.coolDown = data.coolDown - dt
 	data.altCoolDown = data.altCoolDown - dt
 	data.recoil = data.recoil - dt
-	
+
+	-- Put new bolt in
 	if data.timetobolt ~= nil then
 		data.timetobolt = data.timetobolt - dt
 		if data.timetobolt <= 0 then
@@ -316,7 +316,6 @@ function client.tickPlayerCROSS(p, dt)
 			data.recoil = 0.05
 		end
 	end
-	-- END SHELL EJECT
 	
 	-- RECOIL
 	if data.recoil > -0.5 then

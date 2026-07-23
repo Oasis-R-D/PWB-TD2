@@ -152,7 +152,7 @@ function client.tickPlayerPYTH(p, dt)
 		
 		local playervel = GetPlayerVelocity(p)
 
-		muzzleFlash(mt.pos, 4, 0.1, 0.15, 0.33)
+		muzzleFlash(mt.pos, 6)
 			
 		data.clipamnt = data.clipamnt - 1
 		if data.clipamnt > 0 then

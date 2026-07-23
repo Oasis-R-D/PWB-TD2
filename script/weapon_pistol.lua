@@ -235,7 +235,7 @@ function client.tickPlayerPIST9MM(p, dt)
 			data.firesound = PlaySound(LoadSound(NONCLIENTPRIM_FIRESOUND), mt.pos, 300)
 		end
 		
-		muzzleFlash(mt.pos, 3, 0.08, 0.13, 0.3)
+		muzzleFlash(mt.pos, 2)
 
 		data.clipamnt = data.clipamnt - 1
 		
