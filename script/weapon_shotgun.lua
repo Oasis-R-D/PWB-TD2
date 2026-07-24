@@ -262,7 +262,7 @@ function client.tickPlayerSG(p, dt)
 			data.recoil = 0.1
 			data.clipamnt = data.clipamnt + 1
 			
-			if ammo > 0 and data.clipamnt < CLIP_SIZE then
+			if ammo > 0 and data.clipamnt < CLIP_SIZE and data.clipamnt < ammo then
 				data.shellinserttime = RELOAD_TIME
 				data.coolDown = 0.2 -- wait a bit before player can interrupt
 			else
